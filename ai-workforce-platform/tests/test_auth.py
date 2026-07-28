@@ -81,3 +81,49 @@ async def test_get_current_user_invalid():
     with pytest.raises(HTTPException) as exc_info:
         await get_current_user(creds)
     assert exc_info.value.status_code == 401
+
+import pytest
+from httpx import ASGITransport, AsyncClient
+from unittest.mock import AsyncMock, MagicMock, patch
+from src.main import create_app
+from src.database import get_db
+
+@pytest.fixture
+def auth_client():
+    app = create_app()
+    async def override_get_db():
+        db = AsyncMock(spec=MagicMock)
+        db.add = MagicMock()
+        db.flush = AsyncMock()
+        db.commit = AsyncMock()
+        db.rollback = AsyncMock()
+        mock_result = MagicMock()
+        mock_scalars = MagicMock()
+        mock_scalars.all.return_value = []
+        mock_result.scalars.return_value = mock_scalars
+        db.execute = AsyncMock(return_value=mock_result)
+        yield db
+    app.dependency_overrides[get_db] = override_get_db
+    return app
+
+@pytest.mark.asyncio
+async def test_me_requires_auth(auth_client):
+    transport = ASGITransport(app=auth_client)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get("/api/v1/auth/me")
+        assert resp.status_code == 401
+
+@pytest.mark.asyncio
+async def test_me_with_valid_token(auth_client):
+    token = create_access_token("user1", "company1", "admin")
+    transport = ASGITransport(app=auth_client)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        resp = await client.get(
+            "/api/v1/auth/me",
+            headers={"Authorization": f"Bearer {token}"}
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["user_id"] == "user1"
+        assert data["company_id"] == "company1"
+        assert data["role"] == "admin"
