@@ -60,3 +60,24 @@ def test_jwt_create_decode():
 def test_jwt_invalid_token():
     result = decode_access_token("invalid.token.here")
     assert result is None
+
+import pytest
+from fastapi import HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
+from src.api.deps import get_current_user
+
+@pytest.mark.asyncio
+async def test_get_current_user_valid():
+    token = create_access_token("user1", "company1", "admin")
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
+    result = await get_current_user(creds)
+    assert result.user_id == "user1"
+    assert result.company_id == "company1"
+    assert result.role == "admin"
+
+@pytest.mark.asyncio
+async def test_get_current_user_invalid():
+    creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="invalid.token")
+    with pytest.raises(HTTPException) as exc_info:
+        await get_current_user(creds)
+    assert exc_info.value.status_code == 401
