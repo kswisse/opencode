@@ -40,3 +40,23 @@ def test_auth_schemas_validation():
 
     data = TokenData(user_id="123", company_id="456", role="admin")
     assert data.role == "admin"
+
+from src.services.auth import hash_password, verify_password, create_access_token, decode_access_token
+
+def test_password_hashing():
+    pwd = "mypassword"
+    hashed = hash_password(pwd)
+    assert hashed != pwd
+    assert verify_password(pwd, hashed)
+    assert not verify_password("wrong", hashed)
+
+def test_jwt_create_decode():
+    token = create_access_token("user123", "company456", "admin")
+    data = decode_access_token(token)
+    assert data.user_id == "user123"
+    assert data.company_id == "company456"
+    assert data.role == "admin"
+
+def test_jwt_invalid_token():
+    result = decode_access_token("invalid.token.here")
+    assert result is None
