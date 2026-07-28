@@ -1,0 +1,73 @@
+version: "3.9"
+
+include:
+  - docker-compose.infra.yml
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - POSTGRES_DSN=postgresql+asyncpg://clippy:clippy@postgres:5432/clippy
+      - REDIS_URL=redis://redis:6379/0
+      - NATS_SERVERS=nats://nats:4222
+      - STORAGE_PROVIDER=minio
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=clippy
+      - MINIO_SECRET_KEY=clippy_secret
+      - TEMPORAL_HOST=temporal:7233
+      - TEMPORAL_NAMESPACE=clippy-default
+    volumes:
+      - ./apps/api/src:/app/src:ro
+      - ./packages:/packages:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+
+  worker:
+    build:
+      context: .
+      dockerfile: apps/worker/Dockerfile
+    environment:
+      - POSTGRES_DSN=postgresql+asyncpg://clippy:clippy@postgres:5432/clippy
+      - NATS_SERVERS=nats://nats:4222
+      - STORAGE_PROVIDER=minio
+      - MINIO_ENDPOINT=http://minio:9000
+      - MINIO_ACCESS_KEY=clippy
+      - MINIO_SECRET_KEY=clippy_secret
+      - TEMPORAL_HOST=temporal:7233
+      - TEMPORAL_NAMESPACE=clippy-default
+      - QDRANT_HOST=qdrant
+      - QDRANT_PORT=6333
+    volumes:
+      - ./apps/worker/src:/app/src:ro
+      - ./packages:/packages:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+      temporal:
+        condition: service_started
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
+    volumes:
+      - ./apps/frontend/src:/app/src:ro
+    depends_on:
+      - api

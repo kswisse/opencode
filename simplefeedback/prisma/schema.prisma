@@ -1,0 +1,320 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  MEMBER
+  SUPER_ADMIN
+}
+
+enum InviteStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+}
+
+enum WebhookEvent {
+  FEEDBACK_CREATED
+  FEEDBACK_STATUS_CHANGED
+  FEEDBACK_VOTE
+}
+
+enum FeedbackStatus {
+  OPEN
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  DECLINED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum Plan {
+  FREE
+  PRO
+  BUSINESS
+}
+
+model Organization {
+  id             String        @id @default(cuid())
+  name           String
+  slug           String        @unique
+  customDomain   String?       @unique
+  domainVerified Boolean       @default(false)
+  stripeCustomerId String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  users         User[]
+  projects      Project[]
+  feedback      Feedback[]
+  changelogs    Changelog[]
+  feedbackEmbeds FeedbackEmbed[]
+  subscription  Subscription?
+  apiKeys       ApiKey[]
+  webhooks      Webhook[]
+  invites       Invite[]
+  auditLogs     AuditLog[]
+  notifications Notification[]
+}
+
+model User {
+  id             String          @id @default(cuid())
+  email          String          @unique
+  name           String?
+  avatarUrl      String?
+  role           Role            @default(MEMBER)
+  onboardingCompleted Boolean   @default(false)
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  feedback       Feedback[]
+  votes          FeedbackVote[]
+  comments       FeedbackComment[]
+  apiKeys        ApiKey[]
+  notifications  Notification[]
+
+  @@index([organizationId, email])
+}
+
+model Subscription {
+  id              String    @id @default(cuid())
+  organizationId  String    @unique
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  stripeCustomerId String?
+  stripeSubscriptionId String?
+  plan            Plan      @default(FREE)
+  status          String?
+  currentPeriodEnd DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Project {
+  id             String   @id @default(cuid())
+  name           String
+  description    String?
+  slug           String
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  feedback       Feedback[]
+  changelogs     Changelog[]
+  feedbackEmbeds FeedbackEmbed[]
+
+  @@unique([slug, organizationId])
+  @@index([organizationId])
+}
+
+model Feedback {
+  id             String         @id @default(cuid())
+  title          String
+  description    String?
+  status         FeedbackStatus @default(OPEN)
+  priority       Priority       @default(MEDIUM)
+  aiPriorityScore Float?
+  aiCluster      String?
+  duplicateOfId  String?
+  duplicateOf    Feedback?      @relation("Duplicates", fields: [duplicateOfId], references: [id])
+  duplicates     Feedback[]     @relation("Duplicates")
+  organizationId String
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  authorId       String
+  author         User           @relation(fields: [authorId], references: [id])
+  githubIssueUrl String?
+  labels         String[]
+  metadata       Json?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  votes          FeedbackVote[]
+  comments       FeedbackComment[]
+
+  @@index([organizationId, status])
+  @@index([organizationId, createdAt])
+  @@index([duplicateOfId])
+}
+
+model FeedbackVote {
+  id         String   @id @default(cuid())
+  feedbackId String
+  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([feedbackId, userId])
+  @@index([feedbackId])
+}
+
+model FeedbackComment {
+  id         String   @id @default(cuid())
+  content    String
+  feedbackId String
+  feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([feedbackId])
+}
+
+model Changelog {
+  id             String    @id @default(cuid())
+  title          String
+  content        String
+  projectId      String?
+  project        Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  publishedAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([organizationId, publishedAt])
+}
+
+model FeedbackEmbed {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  projectId      String
+  project        Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  buttonColor    String   @default("#6366f1")
+  buttonText     String   @default("Feedback")
+  position       String   @default("right")
+  title          String   @default("Share Feedback")
+  subtitle       String   @default("Help us improve by sharing your thoughts")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model ApiKey {
+  id             String        @id @default(cuid())
+  name           String
+  key            String        @unique
+  prefix         String
+  lastUsedAt     DateTime?
+  expiresAt      DateTime?
+  active         Boolean       @default(true)
+  organizationId String
+  organization   Organization  @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User          @relation(fields: [userId], references: [id])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@index([organizationId])
+  @@index([prefix])
+  @@index([userId])
+}
+
+model Webhook {
+  id             String          @id @default(cuid())
+  name           String
+  url            String
+  secret         String
+  events         WebhookEvent[]
+  active         Boolean         @default(true)
+  organizationId String
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  deliveries     WebhookDelivery[]
+
+  @@index([organizationId])
+}
+
+model WebhookDelivery {
+  id              String     @id @default(cuid())
+  webhookId       String
+  webhook         Webhook    @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event           WebhookEvent
+  status          String     @default("pending")
+  statusCode      Int?
+  requestBody     Json?
+  responseBody    String?
+  duration        Int?
+  nextRetryAt     DateTime?
+  retryCount      Int        @default(0)
+  deliveredAt     DateTime?
+  createdAt       DateTime   @default(now())
+
+  @@index([webhookId])
+  @@index([status])
+}
+
+model Invite {
+  id             String       @id @default(cuid())
+  email          String
+  role           Role         @default(MEMBER)
+  token          String       @unique
+  status         InviteStatus @default(PENDING)
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  invitedById    String
+  invitedBy      String?
+  expiresAt      DateTime
+  acceptedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  @@index([organizationId])
+  @@index([email])
+  @@index([status])
+}
+
+model AuditLog {
+  id             String   @id @default(cuid())
+  action         String
+  entityType     String
+  entityId       String?
+  metadata       Json?
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String?
+  userEmail      String?
+  ipAddress      String?
+  createdAt      DateTime @default(now())
+
+  @@index([organizationId])
+  @@index([entityType, entityId])
+  @@index([organizationId, createdAt])
+}
+
+model Notification {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type           String
+  title          String
+  message        String
+  link           String?
+  feedbackId     String?
+  read           Boolean  @default(false)
+  createdAt      DateTime @default(now())
+
+  @@index([userId, read])
+  @@index([userId, createdAt])
+}
