@@ -25,3 +25,18 @@ def test_user_model_has_required_fields():
     )
     assert user.email == "test@example.com"
     assert user.role == "admin"
+
+from src.schemas.auth import UserRegister, UserLogin, TokenResponse, TokenData
+
+def test_auth_schemas_validation():
+    reg = UserRegister(email="a@b.com", password="secret123", company_name="Acme")
+    assert reg.email == "a@b.com"
+
+    login = UserLogin(email="a@b.com", password="secret123")
+    assert login.email == "a@b.com"
+
+    token = TokenResponse(access_token="abc", token_type="bearer")
+    assert token.token_type == "bearer"
+
+    data = TokenData(user_id="123", company_id="456", role="admin")
+    assert data.role == "admin"
