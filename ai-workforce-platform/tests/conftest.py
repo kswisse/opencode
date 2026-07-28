@@ -1,3 +1,6 @@
+import os
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key-for-testing")
+
 import pytest
 from httpx import ASGITransport, AsyncClient
 from unittest.mock import AsyncMock, MagicMock
