@@ -173,6 +173,7 @@ model Profile {
   examAttempts   ExamAttempt[]
   mistakes       Mistake[]
 }
+// Cascade: Profile delete → cascade delete ExamAttempt, Mistake
 ```
 
 #### Exam
@@ -185,7 +186,7 @@ model Exam {
   year             Int?
   language         String     @default("fr")
   timeLimitMinutes Int?
-  totalPoints      Int
+  totalPoints      Int?       // null = computed from questions at query time
   negativePoints   Int        @default(0)
   mode             ExamMode   @default(BOTH)
   status           ExamStatus @default(DRAFT)
@@ -197,6 +198,7 @@ model Exam {
   sources          ExamSource[]
   imports          ContentImport[]
 }
+// Cascade: Exam delete → cascade delete ExamSection, ExamAttempt, ExamSource, ContentImport
 ```
 
 #### ExamSection
@@ -215,6 +217,7 @@ model ExamSection {
 
   @@index([examId])
 }
+// Cascade: ExamSection delete → cascade delete Passage, Question
 ```
 
 #### Passage
@@ -233,6 +236,7 @@ model Passage {
 
   @@index([sectionId])
 }
+// Cascade: Passage delete → Restrict (questions reference it)
 ```
 
 #### Question
@@ -262,6 +266,8 @@ model Question {
   @@index([sectionId])
   @@index([passageId])
 }
+// Cascade: Question delete → cascade delete QuestionOption, QuestionAnswer,
+//           QuestionSkill, QuestionVersion. Restrict on QuestionAttempt (preserve history).
 ```
 
 #### QuestionOption
@@ -278,6 +284,7 @@ model QuestionOption {
 
   @@index([questionId])
 }
+// Cascade: QuestionOption delete → Restrict if QuestionAttempt references it (preserve history)
 ```
 
 #### QuestionAnswer
@@ -293,6 +300,7 @@ model QuestionAnswer {
 
   @@index([questionId])
 }
+// Cascade: QuestionAnswer delete → cascade with Question
 ```
 
 #### Skill
@@ -309,6 +317,7 @@ model Skill {
 
   @@index([parentId])
 }
+// Cascade: Skill delete → set null on children.parentId, Restrict on QuestionSkill
 ```
 
 #### QuestionSkill
@@ -323,6 +332,7 @@ model QuestionSkill {
 
   @@unique([questionId, skillId])
 }
+// Cascade: cascade with Question or Skill deletion
 ```
 
 ### 4.2 Exam Attempt Entities
@@ -334,6 +344,7 @@ model ExamAttempt {
   profileId        String
   examId           String
   status           AttemptStatus @default(IN_PROGRESS)
+  mode             AttemptMode   // REAL_EXAM or PRACTICE — which mode was used
   startedAt        DateTime     @default(now())
   submittedAt      DateTime?
   timeSpentSeconds Int          @default(0)
@@ -346,6 +357,7 @@ model ExamAttempt {
   @@index([examId])
   @@index([profileId, examId])
 }
+// Cascade: ExamAttempt delete → cascade delete QuestionAttempt
 ```
 
 #### QuestionAttempt
@@ -356,8 +368,8 @@ model QuestionAttempt {
   questionId        String
   selectedOptionId  String?
   textAnswer        String?
-  questionSnapshot  Json      // Frozen copy of question + options at attempt time
-  isCorrect         Boolean
+  questionSnapshot  Json      // Frozen copy of question + options at attempt time (see Section 8.5)
+  isCorrect         Boolean?  // null for WRITING questions not auto-graded in V1
   pointsAwarded     Int       @default(0)
   timeSpentSeconds  Int       @default(0)
   createdAt         DateTime  @default(now())
@@ -370,6 +382,7 @@ model QuestionAttempt {
   @@index([attemptId])
   @@index([questionId])
 }
+// Cascade: QuestionAttempt delete → cascade delete Mistake. Restrict on QuestionOption (preserve history).
 ```
 
 #### QuestionVersion
@@ -386,6 +399,7 @@ model QuestionVersion {
   @@unique([questionId, version])
   @@index([questionId])
 }
+// Cascade: QuestionVersion delete → cascade with Question
 ```
 
 #### Mistake
@@ -405,6 +419,7 @@ model Mistake {
   @@index([userId])
   @@index([questionAttemptId])
 }
+// Cascade: Mistake delete → cascade with Profile or QuestionAttempt
 ```
 
 ### 4.3 Import Entities
@@ -424,6 +439,7 @@ model Document {
   imports ContentImport[]
   sources ExamSource[]
 }
+// Cascade: Document delete → cascade delete ContentImport, ExamSource (orphaned files cleaned separately)
 ```
 
 #### ExamSource
@@ -443,6 +459,7 @@ model ExamSource {
   @@index([examId])
   @@index([documentId])
 }
+// Cascade: ExamSource delete → cascade with Exam or Document
 ```
 
 #### ContentImport
@@ -467,6 +484,7 @@ model ContentImport {
   @@index([documentId])
   @@index([examId])
 }
+// Cascade: ContentImport delete → cascade with Document, Restrict on Exam
 ```
 
 ### 4.4 Enums
@@ -511,6 +529,13 @@ enum AttemptStatus {
   TIME_UP
 }
 
+enum AttemptMode {
+  REAL_EXAM
+  PRACTICE
+}
+// Used in ExamAttempt.mode to record which mode was used for each attempt.
+// Determines feedback behavior: show explanations in PRACTICE, hide in REAL_EXAM.
+
 enum MistakeCategory {
   CARELESS_MISTAKE
   KNOWLEDGE_GAP
@@ -543,14 +568,16 @@ enum ImportStepStatus {
 
 ```
 Profile ──< ExamAttempt ──< QuestionAttempt ──< Mistake
-                                         │
-Exam ──< ExamSection ──< Passage ──< Question ──< QuestionOption
-                │                              ├──< QuestionAnswer
-                │                              ├──< QuestionSkill ──> Skill
-                │                              └──< QuestionVersion
-                │
-        ──< ExamSource ──> Document
-        ──< ContentImport ──> Document
+    │              │
+    │              └──> Exam ──< ExamSection ──< Passage ──< Question
+    │                                          │               ├──< QuestionOption
+    │                                          │               ├──< QuestionAnswer
+    │                                          │               ├──< QuestionSkill ──> Skill
+    │                                          │               └──< QuestionVersion
+    │                                          │
+    │                                  ──< ExamSource ──> Document
+    │                                  ──< ContentImport ──> Document
+    └──> Profile.id references Supabase auth.users.id
 ```
 
 ---
@@ -572,9 +599,10 @@ Exam ──< ExamSection ──< Passage ──< Question ──< QuestionOption
 
 **FILL_BLANK** — One or more blanks
 - Blank markers in question text: `___` (each `___` is one blank)
-- For N blanks, `QuestionAnswer` contains N records with `text` indicating which blank (e.g., `"blank_1"`, `"blank_2"`)
-- Each blank can have multiple acceptable answers
-- User submission: `QuestionAttempt.textAnswer` stores JSON array `["answer1", "answer2"]`
+- For N blanks, `QuestionAnswer` contains N records per acceptable answer
+- Each `QuestionAnswer.text` stores: `"blank_1: acceptable answer"` format
+- Each blank can have multiple acceptable answers (multiple QuestionAnswer records with same blank prefix)
+- User submission: `QuestionAttempt.textAnswer` stores JSON array `["answer1", "answer2"]` ordered by blank index
 
 **MATCHING** — Match items from two columns
 - Options represent left-side items (column A)
@@ -655,6 +683,7 @@ In PRACTICE mode, additionally allow:
 - No hints, no explanations, no answer reveal
 - Final score only after submission
 - Cannot pause and resume across sessions
+- `submittedAt` set on manual submission OR time-up auto-submit
 
 ### PRACTICE Mode
 - Optional timer (user can choose)
@@ -686,14 +715,18 @@ interface ScoringConfig {
 
 ### 8.2 Calculation
 
+`Exam.totalPoints` is nullable and computed at query time as the sum of all `Question.points` in the exam. This prevents desync when questions are added/edited.
+
 ```
+totalPossible = SUM(question.points) for all questions in exam
+
 For each QuestionAttempt:
   if answer is correct → pointsAwarded = question.points
   if answer is incorrect → pointsAwarded = -question.negativePoints (or 0)
   if unanswered → pointsAwarded = 0
 
 Total Score = sum(pointsAwarded) for all QuestionAttempts
-Percentage = (totalScore / totalPossiblePoints) * 100
+Percentage = (totalScore / totalPossible) * 100
 Section Score = sum(pointsAwarded) for questions in section
 Section Percentage = (sectionScore / sectionTotalPoints) * 100
 ```
@@ -715,12 +748,47 @@ For **WRITING**:
 - Not auto-graded in V1
 - `isCorrect = null`, `pointsAwarded = 0`
 
-### 8.4 Result Calculation
+### 8.4 Question Snapshot (Versioning)
+
+When a `QuestionAttempt` is created, a `questionSnapshot` JSON is stored to preserve the exact question state at attempt time. This ensures historical results remain reproducible even if the question is later edited.
+
+```typescript
+interface QuestionSnapshot {
+  id: string;
+  text: string;
+  type: QuestionType;
+  instructions?: string;
+  points: number;
+  difficulty?: string;
+  options: Array<{
+    id: string;
+    label: string;
+    text: string;
+    isCorrect: boolean;
+  }>;
+  answers: Array<{
+    text: string;
+    isAcceptable: boolean;
+    normalizationRule?: Record<string, boolean>;
+  }>;
+  skills: Array<{
+    name: string;
+    category?: string;
+  }>;
+}
+```
+
+When reviewing a historical attempt, the system reads from `questionSnapshot`, NOT from the current Question record. This guarantees:
+- Answer options shown match what the user saw
+- Correct answer shown matches the version they were tested on
+- Points match the version they were tested on
+
+### 8.5 Result Calculation
 
 ```typescript
 interface ExamResult {
   totalScore: number;
-  totalPossible: number;
+  totalPossible: number;  // computed from SUM(question.points)
   percentage: number;
   timeSpentSeconds: number;
   sectionResults: SectionResult[];
@@ -885,8 +953,9 @@ Computed on demand, not stored.
 
 ### 12.2 Import Pipeline
 
+**PDF Upload:**
 ```
-Upload PDF/Image
+Upload PDF
     ↓
 Document (stored in Supabase Storage)
     ↓
@@ -894,7 +963,7 @@ ContentImport (job created)
     ↓
 Step 1: Text Extraction
   ├── pdf-parse extracts selectable text
-  └── If no text → OCR via Tesseract.js
+  └── If no text or low text (< 50 chars/page) → set ocrStatus = RUNNING → Tesseract.js OCR
     ↓
 Step 2: AI Parsing
   ├── Send extracted text to AI provider
@@ -910,6 +979,20 @@ Step 4: Publish
   ├── Create Exam + ExamSection + Question + QuestionOption records
   ├── Link Document → ExamSource
   ├── Set Exam.status = PUBLISHED
+```
+
+**Image Upload (JPG/JPEG/PNG):**
+```
+Upload Image
+    ↓
+Document (stored in Supabase Storage)
+    ↓
+ContentImport (job created, ocrStatus = RUNNING)
+    ↓
+Step 1: OCR (always — images have no text layer)
+  └── Tesseract.js processes image → extracted text
+    ↓
+Step 2-4: Same as PDF (AI Parsing → Review → Publish)
 ```
 
 ### 12.3 AI Parsing Schema
@@ -977,7 +1060,7 @@ The import pipeline is resumable. Each step has its own status (`extractionStatu
 
 This allows partial progress to be preserved (e.g., extraction succeeded but AI parsing failed).
 
-### 12.5 Document Review UI
+### 12.6 Document Review UI
 
 Admin review screen after AI extraction:
 
@@ -1036,6 +1119,16 @@ Difficulty: [B2 ▼]
 ```
 
 ### 13.3 Practice Sessions
+
+Practice sessions reuse the `ExamAttempt` model with `mode = PRACTICE`. No separate PracticeSession model is needed.
+
+**How it works:**
+1. User selects filter criteria (skill, difficulty, question count)
+2. System queries the QuestionBank for matching questions
+3. System creates a temporary "practice exam" (or selects an existing published exam)
+4. System creates an `ExamAttempt` with `mode = PRACTICE`
+5. User answers questions with immediate feedback
+6. Results tracked same as real exams
 
 Users can create practice sessions:
 ```
@@ -1167,6 +1260,17 @@ Route: `/admin`
 - Never exposed to client bundle
 - Rate limiting on AI endpoints (configurable)
 - AI output always validated through Zod schemas before use
+
+### 16.5 Supabase Storage Security
+
+- Storage bucket: `exam-documents`
+- Allowed MIME types: `application/pdf`, `image/jpeg`, `image/png`
+- Max file size: 50MB
+- RLS policies:
+  - Authenticated users can upload to `exam-documents/{userId}/*`
+  - Only the file owner can read their own files
+  - Admins can read all files
+  - Files are private by default (no public access)
 
 ---
 
