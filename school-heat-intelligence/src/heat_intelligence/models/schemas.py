@@ -1,7 +1,7 @@
 """Pydantic data models for School Heat Intelligence."""
 from datetime import datetime
 from enum import Enum
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
 
@@ -66,7 +66,7 @@ class InterventionResult(BaseModel):
     zone_id: str
     zone_name: str
     baseline_risk: float = Field(ge=0, le=100)
-    scenario_config: Dict[str, float] = Field(description="Scenario input changes")
+    scenario_config: Dict[str, Any] = Field(description="Scenario input changes")
     simulated_risk: float = Field(ge=0, le=100)
     relative_change_pct: float = Field(description="Percentage change in risk")
     assumptions: List[str] = Field(description="List of assumptions used in simulation")
