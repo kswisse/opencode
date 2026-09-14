@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "school-heat-intelligence"
+version = "0.1.0"
+description = "Data-driven school campus heat risk detection, forecasting, and intervention simulation"
+requires-python = ">=3.11"
+dependencies = [
+    "streamlit>=1.30.0",
+    "pandas>=2.1.0",
+    "numpy>=1.26.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "folium>=0.15.0",
+    "plotly>=5.18.0",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-cov>=4.1.0",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/heat_intelligence"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"

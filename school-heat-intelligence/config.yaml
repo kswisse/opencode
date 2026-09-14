@@ -1,0 +1,40 @@
+# School Heat Intelligence Configuration
+# All weights are ILLUSTRATIVE HEURISTIC PARAMETERS, NOT empirically calibrated.
+
+risk_weights:
+  heat_index: 0.5
+  humidity: 0.2
+  wind_speed: 0.15
+  surface: 0.15
+
+surface_factors:
+  asphalt: 0.9
+  concrete: 0.7
+  grass: 0.3
+  permeable: 0.5
+
+exposure_weights:
+  risk: 0.4
+  students: 0.35
+  hours: 0.25
+
+priority_weights:
+  risk: 0.4
+  exposure: 0.35
+  intervention_potential: 0.25
+
+forecast:
+  window_hours: 168
+  horizons: [1, 2, 3, 6]
+
+normalization:
+  heat_index_min: 20.0
+  heat_index_max: 50.0
+  humidity_min: 0.0
+  humidity_max: 100.0
+  wind_speed_min: 0.0
+  wind_speed_max: 15.0
+  max_students: 200
+  max_exposure_hours: 12.0
+
+hotspot_percentile: 75
