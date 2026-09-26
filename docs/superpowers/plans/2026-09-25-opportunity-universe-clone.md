@@ -31,7 +31,7 @@
 | Template | Paths | Count | Task |
 |---|---|---|---|
 | T1 Home | `/en/` | 1 | 3–4 |
-| T2 Listing | `/en/search`, `/en/fully-funded`, `/en/type/<9>`, `/en/subject/<20>`, `/en/region/<7>`, `/en/country/<15>`, `/en/countries` | 53 | 5 |
+| T2 Listing | `/en/search`, `/en/fully-funded`, `/en/type/<17>`, `/en/subject/<20>`, `/en/region/<7>`, `/en/country/<15>`, `/en/countries` | 62 | 5 |
 | T3 Detail | `/en/opportunity/<3 samples>` | 3 | 6 |
 | T4 Blog | `/en/blog` + `/en/blog/<3 samples>` | 4 | 7 |
 | T5 Static | about, faq, methodology, sponsor, pro, stories, mobility-scholarship, privacy, imprint | 9 | 8 |
@@ -51,8 +51,8 @@ C:/Opencode/opportunity-universe-clone/
   assets/js/components.js          header/footer/cookie/cards/listing/forms injection
   en/index.html                    HOME (full static HTML main content)
   en/...                           one folder per original URL, index.html inside
-  tools/scaffold-listings.ps1      build-time generator (53 listing pages)
-  tools/scaffold-static.ps1        build-time generator (9 static pages)
+  tools/scaffold-listings.ps1      build-time generator (62 listing pages incl. countries index)
+  tools/scaffold-static.ps1        build-time generator (10 static pages)
   tools/check-links.ps1            link validator — the test harness for every task
 ```
 
@@ -950,7 +950,7 @@ Expected: exit 1, now only `missing asset -> /assets/js/components.js`.
         '<select data-fill="subject" data-value="' + (P.fSubject || "") + '" data-goto="subject"></select>' +
         '<select data-goto="funding"><option value="">Any funding</option><option value="fully_funded">Fully funded</option></select>' +
         '<a class="btn btn-primary" href="' + out("/en/search") + '" data-out target="_blank" rel="noopener">Search live database <i class="fa-solid fa-arrow-right"></i></a>' +
-        '<p class="u-note">Filters jump to the live site so results are always current.</p>' +
+        '<p class="u-note">Filters switch between local category pages. Search runs on the live site.</p>' +
       '</aside><section>' +
         '<div class="u-apply-bar"><div><b>' + (P.count || "22,415") + ' opportunities</b> in this view · representative results shown</div>' +
         '<a class="btn btn-ghost" href="' + out("/en/search" + (P.q || "")) + '" data-out target="_blank" rel="noopener">See live results</a></div>' +
@@ -1412,11 +1412,11 @@ git commit -m "feat(clone): home part B - eligibility, logos, chips, deadlines, 
 ```
 ---
 
-### Task 5: Listing template + scaffold script (53 pages)
+### Task 5: Listing template + scaffold script (62 pages)
 
 **Files:**
 - Create: `opportunity-universe-clone/tools/scaffold-listings.ps1`
-- Generate: 53 files under `opportunity-universe-clone/en/` (search, fully-funded, type×9, subject×20, region×7, country×15, countries)
+- Generate: 62 files under `opportunity-universe-clone/en/` (search, fully-funded, type×17, subject×20, region×7, country×15, countries)
 
 **Interfaces:**
 - Consumes: page contract (`window.OU_PAGE={kind:"listing",...}`) + `renderListing()` from Task 2.
@@ -1461,9 +1461,11 @@ function New-Page([string]$relPath, [string]$title, [hashtable]$cfg) {
 }
 
 $Types = [ordered]@{
-  scholarship='Scholarships'; fellowship='Fellowships'; internship='Internships';
-  competition='Competitions'; award='Awards & Prizes'; summer_school='Summer Schools';
-  grant='Grants'; conference='Conferences'; research_program='Research Programmes'
+  scholarship='Scholarships'; fellowship='Fellowships'; grant='Grants'; competition='Competitions';
+  olympiad='Olympiads'; award='Awards & Prizes'; conference='Conferences'; forum='Forums & Summits';
+  summer_school='Summer Schools'; internship='Internships'; research_program='Research Programmes';
+  hackathon='Hackathons'; workshop='Workshops'; training='Training Programmes';
+  exchange='Exchange Programmes'; accelerator='Accelerators'; volunteering='Volunteering'
 }
 $Subjects = [ordered]@{
   computer_science='Computer Science'; data_science_ai='Data Science / AI'; engineering='Engineering';
@@ -1544,7 +1546,7 @@ New-Item -ItemType Directory -Force -Path (Join-Path $root 'en/countries') | Out
 - [ ] **Step 2: Run the scaffold**
 
 Run: `powershell -NoProfile -File C:/Opencode/opportunity-universe-clone/tools/scaffold-listings.ps1`
-Expected: `Generated listing pages under en/` and 53 new `index.html` files (verify: `(Get-ChildItem C:/Opencode/opportunity-universe-clone/en -Recurse -Filter index.html).Count` → 54 incl. home).
+Expected: `Generated listing pages under en/` and 62 new `index.html` files (verify: `(Get-ChildItem C:/Opencode/opportunity-universe-clone/en -Recurse -Filter index.html).Count` → 63 incl. home).
 
 - [ ] **Step 3: Run link checker — must PASS with all 54 pages**
 
@@ -1560,7 +1562,7 @@ Expected: breadcrumb, heading, "See live results" bar, 3-col card grid, sidebar 
 
 ```bash
 git add opportunity-universe-clone
-git commit -m "feat(clone): listing template + scaffold - 53 local listing pages"
+git commit -m "feat(clone): listing template + scaffold - 62 local listing pages"
 ```
 
 ---
@@ -1769,11 +1771,11 @@ git commit -m "feat(clone): blog list + 3 condensed article samples"
 
 ---
 
-### Task 8: Static pages via scaffold script (9 pages)
+### Task 8: Static pages via scaffold script (10 pages)
 
 **Files:**
 - Create: `opportunity-universe-clone/tools/scaffold-static.ps1`
-- Generate: `en/about`, `en/faq`, `en/methodology`, `en/sponsor`, `en/pro`, `en/stories`, `en/mobility-scholarship`, `en/privacy`, `en/imprint`
+- Generate: `en/about`, `en/contact`, `en/faq`, `en/methodology`, `en/sponsor`, `en/pro`, `en/stories`, `en/mobility-scholarship`, `en/privacy`, `en/imprint`
 
 **Interfaces:**
 - Consumes: Task 1 CSS (`.u-page-head .u-prose .u-faq`).
@@ -1784,7 +1786,7 @@ git commit -m "feat(clone): blog list + 3 condensed article samples"
 - [ ] **Step 1: Create `tools/scaffold-static.ps1`**
 
 ```powershell
-# Build-time generator for the 9 static pages. Runtime does not depend on it.
+# Build-time generator for the 10 static pages. Runtime does not depend on it.
 $root = Split-Path -Parent $PSScriptRoot
 
 $Head = @'
@@ -1825,6 +1827,17 @@ New-Static 'about' 'About Us' 'About Us' 'Who we are and how this database came 
 <h2>What we do not do</h2>
 <p>We do not run the programmes we list. Applications always happen with the official provider - every card here links straight to their page.</p>
 <div class="u-cta-row"><a class="btn btn-primary" href="https://opportunity-universe.com/en/about" data-out target="_blank" rel="noopener">Read the full story on the original site</a></div>
+'@
+
+New-Static 'contact' 'Contact' 'Contact' 'Questions, corrections and partnership enquiries.' @'
+<p>We read every message. Pick the channel that fits best and we usually reply within two working days.</p>
+<h2>General enquiries</h2>
+<p>Questions about the database, a listing that looks wrong, or a deadline that changed? Write to <b>info@opportunity-universe.com</b> and include the link to the programme you mean.</p>
+<h2>For organisations</h2>
+<p>Running a scholarship, fellowship or programme? Use the Submit Opportunity form in the header menu - listings are reviewed before they go live. For partnerships and promotion, email the same address with "Partnership" in the subject line.</p>
+<h2>Press</h2>
+<p>For interviews and data requests, get in touch with your deadline - we can share aggregate numbers on openings by region and field.</p>
+<div class="u-cta-row"><a class="btn btn-primary" href="https://opportunity-universe.com/en/contact" data-out target="_blank" rel="noopener">Contact form on the original site</a></div>
 '@
 
 New-Static 'faq' 'FAQ' 'Frequently Asked Questions' 'The questions we hear most often.' @'
@@ -1889,13 +1902,13 @@ New-Static 'imprint' 'Imprint' 'Imprint' 'Legal identification for the site oper
 <div class="u-cta-row"><a class="btn btn-ghost" href="https://opportunity-universe.com/en/imprint" data-out target="_blank" rel="noopener">Original imprint</a></div>
 '@
 
-"Generated 9 static pages under en/"
+"Generated 10 static pages under en/"
 ```
 
 - [ ] **Step 2: Run the scaffold**
 
 Run: `powershell -NoProfile -File C:/Opencode/opportunity-universe-clone/tools/scaffold-static.ps1`
-Expected: `Generated 9 static pages under en/`.
+Expected: `Generated 10 static pages under en/`.
 
 - [ ] **Step 3: Run link checker + open 2 pages**
 
@@ -1906,7 +1919,7 @@ Open `/en/about` (prose page) and `/en/faq` (accordion expands on click).
 
 ```bash
 git add opportunity-universe-clone
-git commit -m "feat(clone): 9 static pages via scaffold script"
+git commit -m "feat(clone): 10 static pages via scaffold script"
 ```
 ---
 
@@ -2225,7 +2238,7 @@ git commit -m "feat(clone): map and calendar UI shells with CTAs to original"
 - [ ] **Step 1: Full link check**
 
 Run: `powershell -NoProfile -File C:/Opencode/opportunity-universe-clone/tools/check-links.ps1`
-Expected: exit 0, `0 broken links`, ~97 HTML files (1 home + 404 + 1 stub en/index + 54 listing + 3 detail + 4 blog + 9 static + 5 forms + 2 shells + …; exact count printed by the script).
+Expected: exit 0, `0 broken links`, ~89 HTML files (1 root redirect + 404 + 1 home en/index + 62 listing incl. countries index + 3 detail + 4 blog + 10 static + 5 forms + 2 shells + …; exact count printed by the script).
 If any failure: fix the source file, re-run — never ship with a failing check.
 
 - [ ] **Step 2: Remote-link mode (optional but recommended)**

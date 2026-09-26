@@ -127,7 +127,7 @@
     document.addEventListener("click", function (e) {
       var b = e.target.closest ? e.target.closest("[data-cc],[data-cc-open]") : null;
       if (!b) return;
-      if (b.hasAttribute("data-cc-open")) { localStorage.removeItem("ou-cc"); box.hidden = false; return; }
+      if (b.hasAttribute("data-cc-open")) { e.preventDefault(); localStorage.removeItem("ou-cc"); box.hidden = false; return; }
       var a = b.getAttribute("data-cc");
       if (a === "prefs") { var p = $("#ouCCPrefs"); p.hidden = !p.hidden; }
       else { localStorage.setItem("ou-cc", a); box.hidden = true; }
@@ -224,7 +224,7 @@
         '<select data-fill="subject" data-value="' + (P.fSubject || "") + '" data-goto="subject"></select>' +
         '<select data-goto="funding"><option value="">Any funding</option><option value="fully_funded">Fully funded</option></select>' +
         '<a class="btn btn-primary" href="' + out("/en/search") + '" data-out target="_blank" rel="noopener">Search live database <i class="fa-solid fa-arrow-right"></i></a>' +
-        '<p class="u-note">Filters jump to the live site so results are always current.</p>' +
+        '<p class="u-note">Filters switch between local category pages. Search runs on the live site.</p>' +
       '</aside><section>' +
         '<div class="u-apply-bar"><div><b>' + (P.count || "22,415") + ' opportunities</b> in this view · representative results shown</div>' +
         '<a class="btn btn-ghost" href="' + out("/en/search" + (P.q || "")) + '" data-out target="_blank" rel="noopener">See live results</a></div>' +
