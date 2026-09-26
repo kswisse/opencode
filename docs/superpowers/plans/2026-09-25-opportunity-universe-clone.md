@@ -1196,7 +1196,7 @@ Expected: black sticky header + nav rows, dark starfield hero with white search 
 - [ ] **Step 3: Run link checker**
 
 Run: `powershell -NoProfile -File C:/Opencode/opportunity-universe-clone/tools/check-links.ps1`
-Expected: `OK ... 0 broken links`. **Interim exception (Tasks 3-4):** links to `/en/fully-funded` (built in Task 5) and `/en/map` (built in Task 9) may fail until those tasks land — the gate is "no broken links other than future-page targets". Full `0 broken links` is required from Task 5 onward, and is the ship gate in Task 11. (The `<form data-out action>` is not an anchor — form redirect is click-tested in Task 11.)
+Expected: `OK ... 0 broken links`. **Interim exception (Tasks 3-4):** links to `/en/fully-funded` (built in Task 5) and `/en/map` (built in Task 10) may fail until those tasks land — the gate is "no broken links other than future-page targets". Beyond future-page targets the tree must stay clean; full `0 broken links` (every page built) is the ship gate in Task 11. (The `<form data-out action>` is not an anchor — form redirect is click-tested in Task 11.)
 
 - [ ] **Step 4: Commit**
 
@@ -1402,7 +1402,7 @@ git commit -m "feat(clone): home part A - hero, search, newsletter band, feature
 
 Open `http://localhost:8080/en/` → every section above renders: country select, logo wall (grayscale), 3 chip rows, deadline strip (compact rows, "Closes today!" in red), dark compare block with bars, By Category/Region chip boxes, 3 quotes, dark-blue account band, 3 blog cards, second newsletter band.
 Run: `powershell -NoProfile -File C:/Opencode/opportunity-universe-clone/tools/check-links.ps1`
-Expected: `OK ... 0 broken links`.
+Expected: interim failures only (listing pages built in Task 5; `/en/blog`, `/en/methodology`, `/en/register`, `/en/map` built in Tasks 7-10) - no other broken links.
 
 - [ ] **Step 3: Commit**
 
@@ -1759,7 +1759,7 @@ Note: blog cards in `[data-blogs]` link Out (rule). The 3 local article pages ar
 
 - [ ] **Step 4: Run link checker + spot-check**
 
-Run: `powershell -NoProfile -File C:/Opencode/opportunity-universe-clone/tools/check-links.ps1` → `OK ... 0 broken links`.
+Run: `powershell -NoProfile -File C:/Opencode/opportunity-universe-clone/tools/check-links.ps1` → broken links limited to the still-unbuilt pages `/en/methodology` (Task 8), `/en/register` (Task 9), `/en/map` (Task 10); full `0 broken links` gate applies from Task 11.
 Open `/en/blog` → 3 cards linking Out; open article 1 by URL → renders with CTA.
 
 - [ ] **Step 5: Commit**
