@@ -61,7 +61,7 @@ class UrlDb:
              next_retry: str | None = None) -> None:
         now = _utcnow()
         self.conn.execute(
-            "UPDATE urls SET status=?, content_hash=?, "
+            "UPDATE urls SET status=?, content_hash=COALESCE(?, content_hash), "
             "last_crawled=CASE WHEN ?='fetched' THEN ? ELSE last_crawled END, "
             "next_retry=? WHERE url=?",
             (status, content_hash, status, now, next_retry, url),
@@ -70,7 +70,7 @@ class UrlDb:
 
     def has_content(self, content_hash: str) -> bool:
         row = self.conn.execute(
-            "SELECT 1 FROM urls WHERE content_hash=? AND status='fetched' LIMIT 1",
+            "SELECT 1 FROM urls WHERE content_hash=? LIMIT 1",
             (content_hash,),
         ).fetchone()
         return row is not None

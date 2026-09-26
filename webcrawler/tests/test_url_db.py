@@ -43,3 +43,11 @@ def test_double_discover_keeps_single_row(tmp_path):
     cur = db.conn.execute("SELECT COUNT(*) FROM urls WHERE url=?", ("https://a.com/5",))
     assert cur.fetchone()[0] == 1
     db.close()
+
+def test_mark_failed_preserves_existing_content_hash(tmp_path):
+    db = make_db(tmp_path)
+    db.mark_discovered("https://a.com/6", "news", "a.com")
+    db.mark("https://a.com/6", "fetched", content_hash="keepme")
+    db.mark("https://a.com/6", "failed", next_retry="2026-09-27T00:00:00+00:00")
+    assert db.has_content("keepme") is True
+    db.close()

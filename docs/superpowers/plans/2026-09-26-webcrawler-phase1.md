@@ -140,6 +140,14 @@ def test_double_discover_keeps_single_row(tmp_path):
     cur = db.conn.execute("SELECT COUNT(*) FROM urls WHERE url=?", ("https://a.com/5",))
     assert cur.fetchone()[0] == 1
     db.close()
+
+def test_mark_failed_preserves_existing_content_hash(tmp_path):
+    db = make_db(tmp_path)
+    db.mark_discovered("https://a.com/6", "news", "a.com")
+    db.mark("https://a.com/6", "fetched", content_hash="keepme")
+    db.mark("https://a.com/6", "failed", next_retry="2026-09-27T00:00:00+00:00")
+    assert db.has_content("keepme") is True
+    db.close()
 ```
 
 - [ ] **Step 2: Run tests to verify failure**
@@ -213,7 +221,7 @@ class UrlDb:
              next_retry: str | None = None) -> None:
         now = _utcnow()
         self.conn.execute(
-            "UPDATE urls SET status=?, content_hash=?, "
+            "UPDATE urls SET status=?, content_hash=COALESCE(?, content_hash), "
             "last_crawled=CASE WHEN ?='fetched' THEN ? ELSE last_crawled END, "
             "next_retry=? WHERE url=?",
             (status, content_hash, status, now, next_retry, url),
@@ -222,7 +230,7 @@ class UrlDb:
 
     def has_content(self, content_hash: str) -> bool:
         row = self.conn.execute(
-            "SELECT 1 FROM urls WHERE content_hash=? AND status='fetched' LIMIT 1",
+            "SELECT 1 FROM urls WHERE content_hash=? LIMIT 1",
             (content_hash,),
         ).fetchone()
         return row is not None
@@ -241,7 +249,7 @@ class UrlDb:
 - [ ] **Step 4: Run tests to verify pass**
 
 Run: `python -m pytest tests/test_url_db.py -q`
-Expected: `5 passed`.
+Expected: `6 passed`.
 
 - [ ] **Step 5: Commit**
 
