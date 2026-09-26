@@ -1019,7 +1019,7 @@ Expected: exit 1, now only `missing asset -> /assets/js/components.js`.
 - [ ] **Step 4: Run link checker — must PASS now**
 
 Run: `powershell -NoProfile -File C:/Opencode/opportunity-universe-clone/tools/check-links.ps1`
-Expected: `OK: 4 HTML files, 0 broken links`, exit 0.
+Expected: `OK: 3 HTML files, 0 broken links`, exit 0.
 
 - [ ] **Step 5: Serve + smoke test**
 
