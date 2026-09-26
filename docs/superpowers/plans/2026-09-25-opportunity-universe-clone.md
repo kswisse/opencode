@@ -1656,7 +1656,7 @@ Body paragraphs (written for this mirror, condensed):
 - [ ] **Step 3: Run link checker + spot-check**
 
 Run: `powershell -NoProfile -File C:/Opencode/opportunity-universe-clone/tools/check-links.ps1`
-Expected: `OK ... 0 broken links`.
+Expected: broken links limited to the still-unbuilt pages `/en/blog` (Task 7), `/en/methodology` (Task 8), `/en/register` (Task 9), `/en/map` (Task 10); full `0 broken links` gate applies from Task 11.
 Open `http://localhost:8080/en/opportunity/31159-caltech-scholarships-2027` → header, breadcrumb, cover, sidebar, both Apply links go to `https://opportunity-universe.com/...` (verify `data-out` in link attributes).
 
 - [ ] **Step 4: Commit**
