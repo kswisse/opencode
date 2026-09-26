@@ -1548,10 +1548,10 @@ New-Item -ItemType Directory -Force -Path (Join-Path $root 'en/countries') | Out
 Run: `powershell -NoProfile -File C:/Opencode/opportunity-universe-clone/tools/scaffold-listings.ps1`
 Expected: `Generated listing pages under en/` and 62 new `index.html` files (verify: `(Get-ChildItem C:/Opencode/opportunity-universe-clone/en -Recurse -Filter index.html).Count` → 63 incl. home).
 
-- [ ] **Step 3: Run link checker — must PASS with all 54 pages**
+- [ ] **Step 3: Run link checker — interim exceptions only**
 
 Run: `powershell -NoProfile -File C:/Opencode/opportunity-universe-clone/tools/check-links.ps1`
-Expected: `OK: 57 HTML files, 0 broken links` (54 en/ + index + 404 + …; exact N may vary, exit code 0 is the gate).
+Expected: 65 HTML files (1 root + 404 + 63 under `en/`); broken links limited to the still-unbuilt pages `/en/blog` (Task 7), `/en/methodology` (Task 8), `/en/register` (Task 9), `/en/map` (Task 10). Full `0 broken links` gate applies from Task 11.
 
 - [ ] **Step 4: Spot-check 3 URLs in browser**
 

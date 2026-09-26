@@ -2,6 +2,7 @@
   "use strict";
   var OU = window.OU || { BASE: "https://opportunity-universe.com", localCountries: [] };
   var P = window.OU_PAGE || {};
+  if (typeof P.crumb === "string") { try { P.crumb = JSON.parse(P.crumb); } catch (e) { P.crumb = []; } }
   var $ = function (s, r) { return (r || document).querySelector(s); };
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/"/g, "&quot;"); }
   function out(path) { return OU.BASE + path; }

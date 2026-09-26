@@ -36,7 +36,7 @@ foreach ($f in $files) {
     }
     if ($href -match '^(#|mailto:|tel:|javascript:)') { continue }
     if ($isOut) { $errors += "$($f.FullName): data-out with non-absolute href -> $href"; continue }
-    $path = ($href -split '#')[0]
+    $path = (($href -split '#')[0] -split '\?')[0]
     if ($path -eq '') { continue }
     $full = Join-Path $root ($path.TrimStart('/').Replace('/', [IO.Path]::DirectorySeparatorChar))
     $ok = if ($path.EndsWith('/')) { Test-Path (Join-Path $full 'index.html') }
