@@ -113,12 +113,12 @@
   /* ---------- cookie banner ---------- */
   function cookieHTML() {
     return '<div class="u-cc" id="ouCC" hidden><div class="u-cc-in">' +
-      '<p class="u-cc-text">We use essential cookies to make our website work. With your consent we may also use additional cookies to improve the experience. See our <a href="/en/privacy">Data Policy</a>.</p>' +
+      '<p class="u-cc-text">We use essential cookies to make our website work. With your consent, we may also use additional cookies to improve the user experience and to analyse website traffic. By clicking on "Accept" you agree to our cookie usage as described in our <a href="/en/privacy">Data Policy</a>. You can customise your cookie settings by clicking on "Preferences".</p>' +
       '<div class="u-cc-acts"><button type="button" class="btn btn-ghost" data-cc="prefs">Preferences</button>' +
       '<button type="button" class="btn btn-primary" data-cc="all">Accept</button></div>' +
       '<div class="u-cc-prefs" id="ouCCPrefs" hidden>' +
       '<div class="u-cc-opt"><div><b>Essential cookies</b><span>Needed for the website to work.</span></div><span class="u-cc-on">Always on</span></div>' +
-      '<div class="u-cc-opt"><div><b>Analytics and marketing cookies</b><span>Help us understand how the website is used.</span></div>' +
+      '<div class="u-cc-opt"><div><b>Analytics and marketing cookies</b><span>Help us understand how the website is used and measure our campaigns.</span></div>' +
       '<button type="button" class="btn btn-ghost" data-cc="save">Save choices</button></div></div></div></div>';
   }
   function initCookie() {
@@ -275,19 +275,58 @@
       more.querySelector("button").addEventListener("click", function (e) { e.stopPropagation(); more.classList.toggle("open"); });
       document.addEventListener("click", function () { more.classList.remove("open"); });
     }
+    var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    Array.prototype.forEach.call(document.querySelectorAll("[data-count]"), function (el) {
+      var target = parseInt(el.getAttribute("data-count"), 10) || 0;
+      if (reduce) { el.textContent = target.toLocaleString("en-US"); return; }
+      var t0 = null, dur = 1500;
+      el.textContent = "0";
+      function step(ts) {
+        if (t0 === null) t0 = ts;
+        var p = Math.min(1, (ts - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+        el.textContent = Math.round(target * e).toLocaleString("en-US");
+        if (p < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    });
     var cv = document.getElementById("ustars");
     if (cv && cv.getContext) {
       var ctx = cv.getContext("2d");
-      function draw() {
+      var PAL = ["#ffffff","#ffffff","#ffffff","#ffffff","#c9dcff","#bcd0ff","#ffe7c4","#ffd9b0"];
+      var stars = [];
+      function seed() {
         cv.width = cv.offsetWidth; cv.height = cv.offsetHeight;
+        stars = [];
+        for (var i = 0; i < 340; i++) stars.push({
+          x: Math.random() * cv.width, y: Math.random() * cv.height,
+          r: Math.random() * 1.4, a: 0.3 + Math.random() * 0.65,
+          c: PAL[Math.random() * 8 | 0], v: 3 + Math.random() * 9
+        });
+      }
+      function paint() {
         ctx.clearRect(0, 0, cv.width, cv.height);
-        for (var i = 0; i < 140; i++) {
-          ctx.globalAlpha = 0.25 + Math.random() * 0.6;
-          ctx.fillStyle = Math.random() > 0.85 ? "#f5cb1f" : "#cfe0ff";
-          ctx.beginPath(); ctx.arc(Math.random() * cv.width, Math.random() * cv.height, Math.random() * 1.4, 0, 7); ctx.fill();
+        for (var i = 0; i < stars.length; i++) {
+          var s = stars[i];
+          ctx.globalAlpha = s.a; ctx.fillStyle = s.c;
+          ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill();
         }
       }
-      draw(); window.addEventListener("resize", draw);
+      seed(); paint();
+      if (!reduce) {
+        var last = -1;
+        requestAnimationFrame(function frame(ts) {
+          if (last < 0) last = ts;
+          var dt = Math.min(0.1, (ts - last) / 1000); last = ts;
+          for (var i = 0; i < stars.length; i++) {
+            stars[i].x -= stars[i].v * dt;
+            if (stars[i].x < -2) stars[i].x = cv.width + 2;
+          }
+          paint();
+          requestAnimationFrame(frame);
+        });
+      }
+      window.addEventListener("resize", function () { seed(); paint(); });
+      window.addEventListener("load", function () { seed(); paint(); });
     }
   }
 

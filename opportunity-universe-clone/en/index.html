@@ -1,15 +1,73 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Fully Funded Scholarships &amp; Youth Opportunities Worldwide | Opportunity Universe</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<meta name="description" content="Search fully funded scholarships, fellowships, internships and youth opportunities worldwide.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
-<link rel="stylesheet" href="/assets/css/style.css"></head>
-<body>
+<link rel="stylesheet" href="/assets/css/style.css">
+</head><body>
 <div id="ouHeader"></div>
-<main id="main"><div class="u-wrap"><p>Loading…</p></div></main>
+<main id="main">
+
+<section class="u-hero">
+  <canvas id="ustars" aria-hidden="true"></canvas>
+  <div class="u-wrap u-hero-in">
+    <h1>Find your next opportunity<span class="u-gold">.</span></h1>
+    <form class="u-search" action="https://opportunity-universe.com/en/search" method="get" role="search" data-out>
+      <input type="search" name="q" placeholder="Keyword" aria-label="Search">
+      <select name="type" data-fill="type" aria-label="Type"></select>
+      <select name="subject" data-fill="subject" aria-label="Subject"></select>
+      <button type="submit">Search</button>
+    </form>
+    <div class="u-stats">
+      <div class="u-stat"><span class="u-stat-n"><span data-count="22415">22,415</span><em>+</em></span><span class="u-stat-l">opportunities in our database</span></div>
+      <div class="u-stat"><span class="u-stat-n"><span data-count="18930">18,930</span></span><span class="u-stat-l">open right now</span></div>
+      <div class="u-stat"><span class="u-stat-n"><span data-count="7405">7,405</span></span><span class="u-stat-l">fully funded</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="u-band">
+  <div class="u-wrap u-band-in">
+    <div><h2>Opportunity Newsletter</h2>
+      <p>Get the best new scholarships, competitions and programmes in your inbox every week, matched to your country, level and interests.</p></div>
+    <form data-redirect="/en/newsletter">
+      <input type="email" name="email" required placeholder="Your email address">
+      <button class="btn btn-gold" type="submit">Subscribe</button>
+      <small><span>✓ Weekly</span><span>✓ Personalised</span><span>✓ 100% Free</span></small>
+    </form>
+  </div>
+</section>
+
+<section class="u-sec u-sec-tight-b"><div class="u-wrap">
+  <div class="u-sec-head"><div><h2><i class="fa-solid fa-star"></i> Featured <span class="u-sec-month">(September 2026)</span></h2>
+    <p>The most prestigious programmes open right now.</p></div></div>
+  <div class="u-grid" data-cards="featured"></div>
+</div></section>
+
+<section class="u-sec u-sec-tight-b"><div class="u-wrap">
+  <div class="u-sec-head"><div><h2><i class="fa-solid fa-hand-holding-dollar"></i> Fully Funded</h2>
+    <p>Programmes that cover the full cost, from tuition to travel and living.</p></div>
+    <a class="u-more" href="/en/fully-funded">View All →</a></div>
+  <div class="u-grid" data-cards="funded"></div>
+  <p style="margin-top:18px"><a class="btn btn-ghost" href="/en/fully-funded">View More Fully Funded Opportunities</a></p>
+</div></section>
+
+<section class="u-sec u-sec-tight-b"><div class="u-wrap">
+  <div class="u-mapbox">
+    <h2><i class="fa-solid fa-earth-americas"></i> World Map</h2>
+    <p>Every in-person programme in our database, on one map. Click a country to explore what happens there.</p>
+    <div class="u-mapstats">
+      <div><b>11,875</b><span>in-person opportunities</span></div>
+      <div><b>167</b><span>countries &amp; territories</span></div>
+    </div>
+    <a class="btn btn-primary" href="/en/map">Open World Map</a>
+  </div>
+</div></section>
+</main>
 <div id="ouFooter"></div><div id="ouCookie"></div>
 <script>window.OU_PAGE={kind:"home"};</script>
 <script src="/assets/js/data.js"></script>
