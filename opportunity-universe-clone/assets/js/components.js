@@ -99,9 +99,9 @@
   '<li><i class="fa-solid fa-phone"></i><a href="tel:+491776762399">+49 177 6762399</a></li>' +
   '<li><i class="fa-solid fa-location-dot"></i><span>Postfach 762135, 22069 Hamburg, Germany</span></li></ul>' +
   '<div class="u-social">' +
-    '<a href="' + out("") + '" data-out target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>' +
-    '<a href="' + out("") + '" data-out target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>' +
-    '<a href="' + out("") + '" data-out target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>' +
+    '<a href="https://www.facebook.com/opportunityuniverse" target="_blank" rel="noopener" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>' +
+    '<a href="https://www.instagram.com/opportunityuniverse" target="_blank" rel="noopener" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>' +
+    '<a href="https://www.linkedin.com/company/opportunityuniverse/" target="_blank" rel="noopener" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>' +
   '</div></div>' +
   explore + community + org + students +
 '</div><div class="u-wrap u-foot-bottom">© 2026 Opportunity Universe ' +

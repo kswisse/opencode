@@ -2256,7 +2256,7 @@ For `/`, `/en/type/scholarship`, `/en/login`:
 - [ ] **Step 4: Link-behaviour audit**
 
 In browser, verify and tick off:
-- [ ] Listing/category nav (chips, "More" menu, footer types) → local `/en/...` URLs, page loads locally.
+- [ ] Listing/category nav (chips, "More" menu, footer links) → local `/en/...` URLs, page loads locally (footer mirrors the original: countries + tools; only `/en/guide` + socials link out with `data-out` / allowlisted domains).
 - [ ] Search box submit → `https://opportunity-universe.com/en/search?q=...&type=...&subject=...`.
 - [ ] Any opportunity card / blog card → original site in new tab (`data-out`).
 - [ ] Detail "Apply" buttons → original site.

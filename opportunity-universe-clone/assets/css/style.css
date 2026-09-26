@@ -24,6 +24,8 @@ button,input,select,textarea{font:inherit}
 .u-sec-head p{margin:2px 0 0;color:var(--muted);font-size:14px}
 .u-sec-month{font-weight:600;color:var(--muted);font-size:17px}
 .u-more{font:700 13px var(--sans);white-space:nowrap}
+.u-sec-head .u-more:not([style]){color:var(--ink);border:1px solid var(--line);padding:8px 14px;border-radius:var(--r);display:inline-flex;align-items:center;gap:7px;background:#fff}
+.u-sec-head .u-more:not([style]):hover{border-color:#9aa1b3;text-decoration:none}
 .u-note{color:var(--muted);font-size:12.5px}
 /* buttons */
 .btn{display:inline-flex;align-items:center;gap:7px;font:700 14px var(--sans);
@@ -364,9 +366,17 @@ white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .u-band-in,.u-account,.u-detail,.u-lay{grid-template-columns:1fr}
   .u-filters,.u-side{position:static}
   .u-foot-grid{grid-template-columns:1fr 1fr}
-  .u-hgrid{grid-template-columns:1fr}
+  .u-hgrid{display:flex;flex-wrap:wrap;column-gap:14px}
+  .u-brand{grid-row:auto;grid-column:auto;padding-top:10px}
   .u-hrow{grid-column:auto}
-  .u-brand{padding-top:10px}
+  .u-hrow1{flex:1;min-width:0;min-height:66px}
+  .u-hrow2{flex-basis:100%;padding-top:4px;min-width:0;overflow:hidden}
+  .u-nav2{min-width:0}
+  .u-signin{display:none}
+}
+@media (max-width:700px){
+  .u-sec-head{grid-template-columns:1fr}
+  .u-sec-head>a,.u-sec-head details{grid-column:1;grid-row:auto;justify-self:start;margin-top:8px}
 }
 @media (max-width:640px){
   .u-hwrap{padding:0 14px}
@@ -380,4 +390,13 @@ white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .u-foot-grid{grid-template-columns:1fr}
   .u-hero{min-height:auto}
   .u-account{padding:30px 22px}
+}
+@media (max-width:560px){
+  .u-hgrid{column-gap:8px}
+  .u-brand{gap:8px}
+  .u-brand-name{font-size:14px}
+  .u-hrow1{min-height:62px}
+  .u-h1-right{gap:8px}
+  .u-join{padding:7px 11px;font-size:12.5px;white-space:nowrap}
+  .u-join i{display:none}
 }
