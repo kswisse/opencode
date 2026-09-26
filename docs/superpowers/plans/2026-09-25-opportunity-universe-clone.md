@@ -1813,8 +1813,7 @@ $Head = @'
 '@
 
 function New-Static([string]$slug, [string]$title, [string]$h1, [string]$sub, [string]$body, [string]$extraClass = '') {
-  $html = $Head.Replace('TITLEPLACE', $title).Replace('H1PLACE', $h1).Replace('SUBPLACE', $sub)
-           .Replace('CLASSPLACE', $extraClass).Replace('BODYPLACE', $body)
+  $html = $Head.Replace('TITLEPLACE', $title).Replace('H1PLACE', $h1).Replace('SUBPLACE', $sub).Replace('CLASSPLACE', $extraClass).Replace('BODYPLACE', $body)
   $dir = Join-Path $root "en/$slug"
   New-Item -ItemType Directory -Force -Path $dir | Out-Null
   [IO.File]::WriteAllText((Join-Path $dir 'index.html'), $html, [Text.UTF8Encoding]::new($false))
@@ -1912,7 +1911,7 @@ Expected: `Generated 10 static pages under en/`.
 
 - [ ] **Step 3: Run link checker + open 2 pages**
 
-Run: `powershell -NoProfile -File C:/Opencode/opportunity-universe-clone/tools/check-links.ps1` → exit 0.
+Run: `powershell -NoProfile -File C:/Opencode/opportunity-universe-clone/tools/check-links.ps1` → broken links limited to the still-unbuilt `/en/register` (Task 9) and `/en/map` (Task 10); full `0 broken links` gate applies from Task 11.
 Open `/en/about` (prose page) and `/en/faq` (accordion expands on click).
 
 - [ ] **Step 4: Commit**
