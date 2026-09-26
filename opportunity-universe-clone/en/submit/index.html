@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Submit Opportunity | Opportunity Universe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head><body>
+<div id="ouHeader"></div>
+<main id="main"><div class="u-wrap">
+  <form class="u-formcard wide" data-redirect="/en/submit">
+    <h1>Submit Opportunity</h1>
+    <p class="u-sub">Know a scholarship, fellowship or programme that is missing? Send it over — listings are reviewed before publishing.</p>
+    <div class="u-field"><label for="s-title">Title <span class="u-req">*</span></label><input id="s-title" name="title" required placeholder="Programme name"></div>
+    <div class="u-field"><label for="s-url">Link to official page <span class="u-req">*</span></label><input id="s-url" type="url" name="url" required placeholder="https://"></div>
+    <div class="u-field"><label for="s-type">Type</label><select id="s-type" name="type" data-fill="type"></select></div>
+    <div class="u-field"><label for="s-deadline">Deadline</label><input id="s-deadline" type="date" name="deadline"></div>
+    <div class="u-field"><label for="s-notes">Notes</label><textarea id="s-notes" name="notes" rows="4" placeholder="Eligibility, funding, anything we should know"></textarea></div>
+    <div class="u-field"><label for="s-email">Your email</label><input id="s-email" type="email" name="email" placeholder="you@example.com"></div>
+    <button class="btn btn-primary" type="submit">Submit for review <i class="fa-solid fa-arrow-right"></i></button>
+    <p class="u-form-alt">The final submission happens on the original site.</p>
+  </form>
+</div></main>
+<div id="ouFooter"></div><div id="ouCookie"></div>
+<script>window.OU_PAGE={kind:"static"};</script>
+<script src="/assets/js/data.js"></script>
+<script src="/assets/js/components.js"></script>
+</body></html>

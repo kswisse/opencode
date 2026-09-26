@@ -2084,7 +2084,7 @@ git commit -m "feat(clone): 10 static pages via scaffold script"
 
 - [ ] **Step 6: Run link checker + click-test one form**
 
-Run: `powershell -NoProfile -File C:/Opencode/opportunity-universe-clone/tools/check-links.ps1` → exit 0.
+Run: `powershell -NoProfile -File C:/Opencode/opportunity-universe-clone/tools/check-links.ps1` → only `/en/map` (built in Task 10) still fails; full `0 broken links` gate applies from Task 11.
 In browser, open `/en/newsletter`, type an email, submit → URL becomes `https://opportunity-universe.com/en/newsletter?email=...` (params preserved, redirect works).
 Open `/en/login`, submit with password → lands on `https://opportunity-universe.com/en/login?email=...` with NO password in URL.
 

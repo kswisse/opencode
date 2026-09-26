@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scholarship Matcher | Opportunity Universe</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@300;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flag-icons@7.2.3/css/flag-icons.min.css">
+<link rel="stylesheet" href="/assets/css/style.css">
+</head><body>
+<div id="ouHeader"></div>
+<main id="main"><div class="u-wrap">
+  <form class="u-formcard" data-redirect="/en/matcher">
+    <h1>Scholarship Matcher</h1>
+    <p class="u-sub">Answer three questions and continue on the original site, where the matching runs live.</p>
+    <div class="u-field"><label for="m-country">Where do you want to study?</label><select id="m-country" name="country">
+      <option value="">Anywhere</option><option>Germany</option><option>United Kingdom</option><option>United States</option>
+      <option>Canada</option><option>Australia</option><option>Japan</option><option>China</option><option>France</option></select></div>
+    <div class="u-field"><label for="m-level">Which level?</label><select id="m-level" name="level">
+      <option value="">Any</option><option>Undergraduate</option><option>Master's</option><option>PhD</option><option>Postdoc</option></select></div>
+    <div class="u-field"><label for="m-subject">Field of study</label><select id="m-subject" name="subject" data-fill="subject"></select></div>
+    <button class="btn btn-primary" type="submit">Find my matches <i class="fa-solid fa-arrow-right"></i></button>
+    <p class="u-form-alt">Matching continues on the original site with your answers.</p>
+  </form>
+</div></main>
+<div id="ouFooter"></div><div id="ouCookie"></div>
+<script>window.OU_PAGE={kind:"static"};</script>
+<script src="/assets/js/data.js"></script>
+<script src="/assets/js/components.js"></script>
+</body></html>
