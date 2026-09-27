@@ -593,6 +593,26 @@ def test_save_markdown_writes_frontmatter_and_body(tmp_path):
 def test_save_markdown_filename_is_slug(tmp_path):
     path = save_markdown(tmp_path, make_doc(), "RAG architecture")
     assert path.name == "hello-world.md"
+
+def test_save_raw_neutralizes_path_traversal(tmp_path):
+    path = save_raw(tmp_path, "https://..\\../evil", "<html>x</html>")
+    resolved = path.resolve()
+    assert resolved.is_relative_to(tmp_path.resolve())
+    assert path.exists()
+    assert path.read_text(encoding="utf-8") == "<html>x</html>"
+
+def test_save_markdown_escapes_yaml_title(tmp_path):
+    doc = make_doc()
+    doc.title = 'Hello: World "quoted"\nline2'
+    path = save_markdown(tmp_path, doc, "RAG architecture")
+    content = path.read_text(encoding="utf-8")
+    lines = content.split("\n")
+    fences = [i for i, line in enumerate(lines) if line == "---"]
+    assert fences[0] == 0
+    assert len(fences) == 2
+    assert lines[1].startswith('title: "')
+    assert lines[1].endswith('"')
+    assert 'Hello: World \\"quoted\\"\\nline2' in lines[1]
 ```
 
 - [ ] **Step 2: Run tests to verify failure**
@@ -619,8 +639,30 @@ def slugify(text: str, fallback: str = "untitled") -> str:
     return slug[:80] or fallback
 
 
+def _safe_domain(netloc: str) -> str:
+    domain = netloc.replace(":", "_")
+    if not domain or set(domain) <= {"."} or "/" in domain or "\\" in domain:
+        return "unknown"
+    return domain
+
+
+def _yaml_value(value) -> str:
+    text = "" if value is None else str(value)
+    needs_quotes = (
+        ": " in text
+        or text.endswith(":")
+        or '"' in text
+        or "\n" in text
+        or text != text.strip()
+    )
+    if needs_quotes:
+        escaped = text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+        return f'"{escaped}"'
+    return text
+
+
 def save_raw(data_dir: Path, url: str, html: str) -> Path:
-    domain = urlparse(url).netloc.replace(":", "_") or "unknown"
+    domain = _safe_domain(urlparse(url).netloc)
     folder = data_dir / "raw" / domain
     folder.mkdir(parents=True, exist_ok=True)
     name = hashlib.sha1(url.encode("utf-8")).hexdigest() + ".html"
@@ -635,15 +677,15 @@ def save_markdown(data_dir: Path, doc: ExtractedContent, topic: str) -> Path:
     path = folder / (slugify(doc.title, hashlib.sha1(doc.url.encode()).hexdigest()[:12]) + ".md")
     lines = [
         "---",
-        f"title: {doc.title or doc.url}",
-        f"url: {doc.url}",
-        f"source: {doc.source}",
-        f"fetched_at: {doc.fetched_at}",
+        f"title: {_yaml_value(doc.title or doc.url)}",
+        f"url: {_yaml_value(doc.url)}",
+        f"source: {_yaml_value(doc.source)}",
+        f"fetched_at: {_yaml_value(doc.fetched_at)}",
     ]
     if doc.published:
-        lines.append(f"published: {doc.published}")
+        lines.append(f"published: {_yaml_value(doc.published)}")
     if doc.author:
-        lines.append(f"author: {doc.author}")
+        lines.append(f"author: {_yaml_value(doc.author)}")
     lines += ["---", "", doc.text, ""]
     path.write_text("\n".join(lines), encoding="utf-8")
     return path
@@ -652,7 +694,7 @@ def save_markdown(data_dir: Path, doc: ExtractedContent, topic: str) -> Path:
 - [ ] **Step 4: Run tests to verify pass**
 
 Run: `python -m pytest tests/test_store.py -q`
-Expected: `3 passed`.
+Expected: `5 passed`.
 
 - [ ] **Step 5: Commit**
 

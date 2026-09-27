@@ -32,3 +32,23 @@ def test_save_markdown_writes_frontmatter_and_body(tmp_path):
 def test_save_markdown_filename_is_slug(tmp_path):
     path = save_markdown(tmp_path, make_doc(), "RAG architecture")
     assert path.name == "hello-world.md"
+
+def test_save_raw_neutralizes_path_traversal(tmp_path):
+    path = save_raw(tmp_path, "https://..\\../evil", "<html>x</html>")
+    resolved = path.resolve()
+    assert resolved.is_relative_to(tmp_path.resolve())
+    assert path.exists()
+    assert path.read_text(encoding="utf-8") == "<html>x</html>"
+
+def test_save_markdown_escapes_yaml_title(tmp_path):
+    doc = make_doc()
+    doc.title = 'Hello: World "quoted"\nline2'
+    path = save_markdown(tmp_path, doc, "RAG architecture")
+    content = path.read_text(encoding="utf-8")
+    lines = content.split("\n")
+    fences = [i for i, line in enumerate(lines) if line == "---"]
+    assert fences[0] == 0
+    assert len(fences) == 2
+    assert lines[1].startswith('title: "')
+    assert lines[1].endswith('"')
+    assert 'Hello: World \\"quoted\\"\\nline2' in lines[1]
