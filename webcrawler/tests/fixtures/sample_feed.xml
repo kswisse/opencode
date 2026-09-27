@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Sample News</title>
+    <item>
+      <title>First Article</title>
+      <link>https://news.example.com/first-article</link>
+      <pubDate>Tue, 22 Sep 2026 10:00:00 GMT</pubDate>
+      <description>Summary of the first article.</description>
+    </item>
+    <item>
+      <title>Second Article</title>
+      <link>https://news.example.com/second-article</link>
+      <pubDate>Wed, 23 Sep 2026 11:30:00 GMT</pubDate>
+      <description>Summary of the second article.</description>
+    </item>
+    <item>
+      <title>Third Article</title>
+      <link>https://news.example.com/third-article</link>
+      <pubDate>Thu, 24 Sep 2026 09:00:00 GMT</pubDate>
+      <description>Summary of the third article.</description>
+    </item>
+  </channel>
+</rss>
