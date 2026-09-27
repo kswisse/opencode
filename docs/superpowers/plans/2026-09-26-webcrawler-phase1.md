@@ -1070,6 +1070,39 @@ def test_crawl_fetches_extracts_and_saves(tmp_path):
                    feed_text=lambda u: FEED_XML)
     assert stats2["fetched"] == 0
     db.close()
+
+
+def test_crawl_dead_feed_increments_feed_errors_and_continues(tmp_path):
+    db = UrlDb(tmp_path / "url_db.sqlite")
+    robots = RobotsCache(fetch_text=lambda u: "User-agent: *\nAllow: /\n")
+    limiter = RateLimiter(min_delay=0.0)
+
+    def transport(url):
+        if url.endswith("/rss"):
+            return 200, FEED_XML
+        return 200, PAGE_HTML
+
+    from core.fetch import Fetcher
+    fetcher = Fetcher(robots=robots, limiter=limiter, transport=transport, backoff=0.0)
+
+    def feed_text(url):
+        if url.startswith("https://dead.example.com"):
+            raise RuntimeError("feed unreachable")
+        return FEED_XML
+
+    stats = crawl(
+        db=db, fetcher=fetcher,
+        feeds=["https://dead.example.com/rss", "https://feeds.example.com/rss"],
+        topic="test topic", limit=10, data_dir=tmp_path,
+        feed_text=feed_text,
+    )
+    assert stats["feed_errors"] == 1
+    assert stats["discovered"] == 1
+    assert stats["fetched"] == 1
+    assert stats["saved"] == 1
+    md_files = list((tmp_path / "md").rglob("*.md"))
+    assert len(md_files) == 1
+    db.close()
 ```
 
 - [ ] **Step 2: Run test to verify failure**
@@ -1083,9 +1116,14 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'runners.research_craw
 # runners/research_crawl.py
 import argparse
 import json
+import sys
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.parse import urlparse
+
+# Allow direct script execution (`python runners/research_crawl.py`): sys.path[0]
+# is the runners/ dir in that mode, so put the project root on sys.path first.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from core.extract import content_hash, extract
 from core.fetch import Fetcher
@@ -1105,10 +1143,17 @@ def load_seeds(path: Path) -> list[str]:
 
 def crawl(db: UrlDb, fetcher: Fetcher, feeds: list[str], topic: str,
           limit: int, data_dir: Path, feed_text=None) -> dict:
-    stats = {"discovered": 0, "fetched": 0, "saved": 0, "dup": 0, "failed": 0, "blocked": 0}
+    stats = {"discovered": 0, "fetched": 0, "saved": 0, "dup": 0, "failed": 0,
+             "blocked": 0, "feed_errors": 0}
     candidates = []
     for feed in feeds:
-        for item in discover(feed, limit=limit, fetch_text=feed_text):
+        # A single dead feed must not abort the whole run: skip it and continue.
+        try:
+            items = discover(feed, limit=limit, fetch_text=feed_text)
+        except Exception:
+            stats["feed_errors"] += 1
+            continue
+        for item in items:
             stats["discovered"] += 1
             db.mark_discovered(item.url, item.source, urlparse(item.url).netloc)
             candidates.append(item)

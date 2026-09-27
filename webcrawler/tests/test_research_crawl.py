@@ -41,3 +41,36 @@ def test_crawl_fetches_extracts_and_saves(tmp_path):
                    feed_text=lambda u: FEED_XML)
     assert stats2["fetched"] == 0
     db.close()
+
+
+def test_crawl_dead_feed_increments_feed_errors_and_continues(tmp_path):
+    db = UrlDb(tmp_path / "url_db.sqlite")
+    robots = RobotsCache(fetch_text=lambda u: "User-agent: *\nAllow: /\n")
+    limiter = RateLimiter(min_delay=0.0)
+
+    def transport(url):
+        if url.endswith("/rss"):
+            return 200, FEED_XML
+        return 200, PAGE_HTML
+
+    from core.fetch import Fetcher
+    fetcher = Fetcher(robots=robots, limiter=limiter, transport=transport, backoff=0.0)
+
+    def feed_text(url):
+        if url.startswith("https://dead.example.com"):
+            raise RuntimeError("feed unreachable")
+        return FEED_XML
+
+    stats = crawl(
+        db=db, fetcher=fetcher,
+        feeds=["https://dead.example.com/rss", "https://feeds.example.com/rss"],
+        topic="test topic", limit=10, data_dir=tmp_path,
+        feed_text=feed_text,
+    )
+    assert stats["feed_errors"] == 1
+    assert stats["discovered"] == 1
+    assert stats["fetched"] == 1
+    assert stats["saved"] == 1
+    md_files = list((tmp_path / "md").rglob("*.md"))
+    assert len(md_files) == 1
+    db.close()
