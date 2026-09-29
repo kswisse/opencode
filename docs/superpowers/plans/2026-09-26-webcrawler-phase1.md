@@ -554,7 +554,7 @@ git commit -m "feat(webcrawler): extract via trafilatura + content hash"
 - Consumes: `ExtractedContent` (Task 4).
 - Produces (Task 8 relies on):
   - `save_raw(data_dir: Path, url: str, html: str) -> Path` → `data/raw/<domain>/<sha1-of-url>.html`
-  - `save_markdown(data_dir: Path, doc: ExtractedContent, topic: str) -> Path` → `data/md/<slug(topic)>/<slug(title)>.md` with YAML frontmatter; returns path.
+  - `save_markdown(data_dir: Path, doc: ExtractedContent, topic: str) -> Path` → `data/md/<slug(topic)>/<slug(title)>.md` with YAML frontmatter starting `topic:`/`title:`/`url:`; if that path exists and its `url:` differs, writes `<slug(title)>-<sha1(url)[:6]>.md` instead; returns path.
 
 - [ ] **Step 1: Write failing tests**
 
@@ -610,9 +610,40 @@ def test_save_markdown_escapes_yaml_title(tmp_path):
     fences = [i for i, line in enumerate(lines) if line == "---"]
     assert fences[0] == 0
     assert len(fences) == 2
-    assert lines[1].startswith('title: "')
-    assert lines[1].endswith('"')
-    assert 'Hello: World \\"quoted\\"\\nline2' in lines[1]
+    title_line = next(line for line in lines if line.startswith("title:"))
+    assert title_line.startswith('title: "')
+    assert title_line.endswith('"')
+    assert 'Hello: World \\"quoted\\"\\nline2' in title_line
+
+def test_save_markdown_writes_topic_frontmatter(tmp_path):
+    path = save_markdown(tmp_path, make_doc(), "RAG architecture")
+    lines = path.read_text(encoding="utf-8").split("\n")
+    fences = [i for i, line in enumerate(lines) if line == "---"]
+    frontmatter = lines[1:fences[1]]
+    assert frontmatter[0] == "topic: RAG architecture"
+
+def test_save_markdown_quotes_yaml_trigger_titles(tmp_path):
+    for title in ("Issue #42", "#1 reason", "- dashed"):
+        doc = make_doc()
+        doc.title = title
+        path = save_markdown(tmp_path, doc, "RAG architecture")
+        lines = path.read_text(encoding="utf-8").split("\n")
+        title_line = next(line for line in lines if line.startswith("title:"))
+        assert title_line.startswith('title: "'), title
+
+def test_save_markdown_same_title_distinct_urls_writes_both(tmp_path):
+    first = make_doc()
+    second = make_doc()
+    second.url = "https://blog.example.com/posts/2"
+    path1 = save_markdown(tmp_path, first, "RAG architecture")
+    first_content = path1.read_text(encoding="utf-8")
+    path2 = save_markdown(tmp_path, second, "RAG architecture")
+    assert path1 != path2
+    assert path1.exists()
+    assert path2.exists()
+    assert path2.name.startswith("hello-world-")
+    assert path1.read_text(encoding="utf-8") == first_content
+    assert "url: https://blog.example.com/posts/2" in path2.read_text(encoding="utf-8")
 ```
 
 - [ ] **Step 2: Run tests to verify failure**
@@ -654,6 +685,8 @@ def _yaml_value(value) -> str:
         or '"' in text
         or "\n" in text
         or text != text.strip()
+        or "#" in text
+        or text.startswith(("- ", "* ", "& ", "! ", "> ", "| ", "%", "? "))
     )
     if needs_quotes:
         escaped = text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
@@ -671,12 +704,27 @@ def save_raw(data_dir: Path, url: str, html: str) -> Path:
     return path
 
 
+def _existing_url(path: Path) -> str:
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("url:"):
+            value = line[len("url:"):].strip()
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+                value = value[1:-1]
+            return value
+    return ""
+
+
 def save_markdown(data_dir: Path, doc: ExtractedContent, topic: str) -> Path:
     folder = data_dir / "md" / slugify(topic, "general")
     folder.mkdir(parents=True, exist_ok=True)
-    path = folder / (slugify(doc.title, hashlib.sha1(doc.url.encode()).hexdigest()[:12]) + ".md")
+    slug = slugify(doc.title, hashlib.sha1(doc.url.encode()).hexdigest()[:12])
+    path = folder / (slug + ".md")
+    # Same title from a different URL must not clobber the earlier article.
+    if path.exists() and _existing_url(path) != doc.url:
+        path = folder / f"{slug}-{hashlib.sha1(doc.url.encode()).hexdigest()[:6]}.md"
     lines = [
         "---",
+        f"topic: {_yaml_value(topic)}",
         f"title: {_yaml_value(doc.title or doc.url)}",
         f"url: {_yaml_value(doc.url)}",
         f"source: {_yaml_value(doc.source)}",
@@ -694,7 +742,7 @@ def save_markdown(data_dir: Path, doc: ExtractedContent, topic: str) -> Path:
 - [ ] **Step 4: Run tests to verify pass**
 
 Run: `python -m pytest tests/test_store.py -q`
-Expected: `5 passed`.
+Expected: `8 passed`.
 
 - [ ] **Step 5: Commit**
 
@@ -1097,6 +1145,7 @@ def test_crawl_dead_feed_increments_feed_errors_and_continues(tmp_path):
         feed_text=feed_text,
     )
     assert stats["feed_errors"] == 1
+    assert stats["feed_error_urls"] == ["https://dead.example.com/rss"]
     assert stats["discovered"] == 1
     assert stats["fetched"] == 1
     assert stats["saved"] == 1
@@ -1144,14 +1193,16 @@ def load_seeds(path: Path) -> list[str]:
 def crawl(db: UrlDb, fetcher: Fetcher, feeds: list[str], topic: str,
           limit: int, data_dir: Path, feed_text=None) -> dict:
     stats = {"discovered": 0, "fetched": 0, "saved": 0, "dup": 0, "failed": 0,
-             "blocked": 0, "feed_errors": 0}
+             "blocked": 0, "feed_errors": 0, "feed_error_urls": []}
     candidates = []
     for feed in feeds:
         # A single dead feed must not abort the whole run: skip it and continue.
         try:
             items = discover(feed, limit=limit, fetch_text=feed_text)
-        except Exception:
+        except Exception as e:
             stats["feed_errors"] += 1
+            stats["feed_error_urls"].append(feed)
+            print(f"feed error: {feed} ({type(e).__name__})", file=sys.stderr)
             continue
         for item in items:
             stats["discovered"] += 1
@@ -1224,12 +1275,12 @@ https://feeds.bbci.co.uk/news/rss.xml
 - [ ] **Step 5: Run unit test to verify pass**
 
 Run: `python -m pytest tests/test_research_crawl.py -q`
-Expected: `1 passed`.
+Expected: `2 passed`.
 
 - [ ] **Step 6: Run full suite**
 
 Run: `python -m pytest -q`
-Expected: `25 passed` (5+4+3+3+5+4+1 from tasks 2–8; task 1 has no tests).
+Expected: `32 passed` (6+4+3+8+5+4+2 from tasks 2–8; task 1 has no tests).
 
 - [ ] **Step 7: End-to-end smoke run (real network, small)**
 

@@ -29,6 +29,8 @@ def _yaml_value(value) -> str:
         or '"' in text
         or "\n" in text
         or text != text.strip()
+        or "#" in text
+        or text.startswith(("- ", "* ", "& ", "! ", "> ", "| ", "%", "? "))
     )
     if needs_quotes:
         escaped = text.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
@@ -46,12 +48,27 @@ def save_raw(data_dir: Path, url: str, html: str) -> Path:
     return path
 
 
+def _existing_url(path: Path) -> str:
+    for line in path.read_text(encoding="utf-8").splitlines():
+        if line.startswith("url:"):
+            value = line[len("url:"):].strip()
+            if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+                value = value[1:-1]
+            return value
+    return ""
+
+
 def save_markdown(data_dir: Path, doc: ExtractedContent, topic: str) -> Path:
     folder = data_dir / "md" / slugify(topic, "general")
     folder.mkdir(parents=True, exist_ok=True)
-    path = folder / (slugify(doc.title, hashlib.sha1(doc.url.encode()).hexdigest()[:12]) + ".md")
+    slug = slugify(doc.title, hashlib.sha1(doc.url.encode()).hexdigest()[:12])
+    path = folder / (slug + ".md")
+    # Same title from a different URL must not clobber the earlier article.
+    if path.exists() and _existing_url(path) != doc.url:
+        path = folder / f"{slug}-{hashlib.sha1(doc.url.encode()).hexdigest()[:6]}.md"
     lines = [
         "---",
+        f"topic: {_yaml_value(topic)}",
         f"title: {_yaml_value(doc.title or doc.url)}",
         f"url: {_yaml_value(doc.url)}",
         f"source: {_yaml_value(doc.source)}",

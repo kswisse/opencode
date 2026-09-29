@@ -29,14 +29,16 @@ def load_seeds(path: Path) -> list[str]:
 def crawl(db: UrlDb, fetcher: Fetcher, feeds: list[str], topic: str,
           limit: int, data_dir: Path, feed_text=None) -> dict:
     stats = {"discovered": 0, "fetched": 0, "saved": 0, "dup": 0, "failed": 0,
-             "blocked": 0, "feed_errors": 0}
+             "blocked": 0, "feed_errors": 0, "feed_error_urls": []}
     candidates = []
     for feed in feeds:
         # A single dead feed must not abort the whole run: skip it and continue.
         try:
             items = discover(feed, limit=limit, fetch_text=feed_text)
-        except Exception:
+        except Exception as e:
             stats["feed_errors"] += 1
+            stats["feed_error_urls"].append(feed)
+            print(f"feed error: {feed} ({type(e).__name__})", file=sys.stderr)
             continue
         for item in items:
             stats["discovered"] += 1

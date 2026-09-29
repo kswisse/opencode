@@ -49,6 +49,37 @@ def test_save_markdown_escapes_yaml_title(tmp_path):
     fences = [i for i, line in enumerate(lines) if line == "---"]
     assert fences[0] == 0
     assert len(fences) == 2
-    assert lines[1].startswith('title: "')
-    assert lines[1].endswith('"')
-    assert 'Hello: World \\"quoted\\"\\nline2' in lines[1]
+    title_line = next(line for line in lines if line.startswith("title:"))
+    assert title_line.startswith('title: "')
+    assert title_line.endswith('"')
+    assert 'Hello: World \\"quoted\\"\\nline2' in title_line
+
+def test_save_markdown_writes_topic_frontmatter(tmp_path):
+    path = save_markdown(tmp_path, make_doc(), "RAG architecture")
+    lines = path.read_text(encoding="utf-8").split("\n")
+    fences = [i for i, line in enumerate(lines) if line == "---"]
+    frontmatter = lines[1:fences[1]]
+    assert frontmatter[0] == "topic: RAG architecture"
+
+def test_save_markdown_quotes_yaml_trigger_titles(tmp_path):
+    for title in ("Issue #42", "#1 reason", "- dashed"):
+        doc = make_doc()
+        doc.title = title
+        path = save_markdown(tmp_path, doc, "RAG architecture")
+        lines = path.read_text(encoding="utf-8").split("\n")
+        title_line = next(line for line in lines if line.startswith("title:"))
+        assert title_line.startswith('title: "'), title
+
+def test_save_markdown_same_title_distinct_urls_writes_both(tmp_path):
+    first = make_doc()
+    second = make_doc()
+    second.url = "https://blog.example.com/posts/2"
+    path1 = save_markdown(tmp_path, first, "RAG architecture")
+    first_content = path1.read_text(encoding="utf-8")
+    path2 = save_markdown(tmp_path, second, "RAG architecture")
+    assert path1 != path2
+    assert path1.exists()
+    assert path2.exists()
+    assert path2.name.startswith("hello-world-")
+    assert path1.read_text(encoding="utf-8") == first_content
+    assert "url: https://blog.example.com/posts/2" in path2.read_text(encoding="utf-8")

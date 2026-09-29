@@ -68,6 +68,7 @@ def test_crawl_dead_feed_increments_feed_errors_and_continues(tmp_path):
         feed_text=feed_text,
     )
     assert stats["feed_errors"] == 1
+    assert stats["feed_error_urls"] == ["https://dead.example.com/rss"]
     assert stats["discovered"] == 1
     assert stats["fetched"] == 1
     assert stats["saved"] == 1
