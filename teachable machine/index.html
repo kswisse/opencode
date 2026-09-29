@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pose Fighter</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+  <header id="hud">
+    <div class="hp-block">
+      <span class="hp-name">BẠN</span>
+      <div class="hp-bar"><div id="hp-player-fill" class="hp-fill player"></div></div>
+      <span id="hp-player-num" class="hp-num">1200</span>
+    </div>
+    <div id="cooldowns">
+      <div class="cd-slot" id="cd1"><span class="cd-key">1</span><span class="cd-name">Bắn</span></div>
+      <div class="cd-slot" id="cd2"><span class="cd-key">2</span><span class="cd-name">Cầu nổ</span></div>
+      <div class="cd-slot" id="cd3"><span class="cd-key">3</span><span class="cd-name">Khiên</span></div>
+    </div>
+    <div class="hp-block boss">
+      <span id="hp-boss-num" class="hp-num">1200</span>
+      <div class="hp-bar"><div id="hp-boss-fill" class="hp-fill boss"></div></div>
+      <span class="hp-name">BOSS</span>
+    </div>
+  </header>
+
+  <main id="stage">
+    <canvas id="game" width="960" height="540"></canvas>
+
+    <div id="webcam-wrap">
+      <video id="video" autoplay playsinline muted></video>
+      <div id="pose-label">Camera: tắt</div>
+    </div>
+
+    <div id="banner" class="hidden"></div>
+
+    <div id="overlay">
+      <h1 id="overlay-title">POSE FIGHTER</h1>
+      <p id="overlay-sub">Điều khiển bằng tư thế qua camera — chiến thắng boss!</p>
+      <button id="overlay-btn">BẮT ĐẦU</button>
+      <p id="overlay-hint">Tay trái = bắn · Tay phải = cầu nổ · Tay X = khiên · Đứng thẳng = di chuyển (↑↓←→)</p>
+    </div>
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.3.18/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/pose@0.8/dist/teachablemachine-pose.min.js"></script>
+<script src="stretch.js"></script>
+</body>
+</html>
