@@ -28,6 +28,15 @@ def test_discover_skips_non_http():
     assert [i.url for i in items] == ["https://ok.com/a"]
 
 
+def test_discover_scheme_check_not_prefix_match():
+    mixed = [
+        {"href": "httpfoo://not-http/x"},
+        {"href": "HTTPS://ok.com/a"},
+    ]
+    items = discover("q", search=lambda q, lang="en": mixed)
+    assert [i.url for i in items] == ["HTTPS://ok.com/a"]
+
+
 def test_discover_missing_href_ignored():
     items = discover("q", search=lambda q, lang="en": [{"href": ""}, {"title": "x"}])
     assert items == []

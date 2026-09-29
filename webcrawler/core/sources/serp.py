@@ -23,7 +23,7 @@ def discover(query: str, limit: int = 50, lang: str = "en", search=None) -> list
         if len(out) >= limit:
             break
         url = (item or {}).get("href") or ""
-        if not url.startswith(_SCHEMES):
+        if urlparse(url).scheme.lower() not in _SCHEMES:
             continue
         domain = urlparse(url).netloc.lower()
         if seen.get(domain, 0) >= MAX_PER_DOMAIN:
