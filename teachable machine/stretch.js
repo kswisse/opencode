@@ -18,7 +18,8 @@ const SKILL2 = { dmg: 150, cd: 5000, fuse: 1000 };
 const BOSS_CFG = {
   shotDmg: 100, shotCd: 3000,
   slashDmg: 150, slashCd: 4000, slashRange: 220,
-  shieldCdMin: 8000, shieldCdMax: 12000, shieldDur: 2000
+  shieldCdMin: 8000, shieldCdMax: 12000, shieldDur: 2000,
+  moveSpeed: 95, keepMin: 120, keepMax: 200
 };
 const HEAL_PER_SEC = 5;
 const SHIELD_FACTOR = 0.25;
@@ -33,7 +34,15 @@ const overlay = $("overlay");
 const overlayTitle = $("overlay-title");
 const overlaySub = $("overlay-sub");
 const overlayBtn = $("overlay-btn");
+const overlayBtn2 = $("overlay-btn2");
+const helpBtn = $("help-btn");
+const helpBack = $("help-back");
+const overlayMain = $("overlay-main");
+const helpPanel = $("help-panel");
+const overlayActions = $("overlay-actions");
 const bannerEl = $("banner");
+const poseCanvas = $("pose-canvas");
+const poseCtx = poseCanvas.getContext("2d");
 
 /* ===== STATE ===== */
 const STATE = {
@@ -122,9 +131,20 @@ function showOverlay(title, sub, btnText, mode) {
   overlaySub.textContent = sub;
   overlayBtn.textContent = btnText;
   overlayTitle.className = mode === "win" ? "win" : mode === "lose" ? "lose" : "";
+  overlayBtn2.classList.toggle("hidden", mode !== "win" && mode !== "lose");
+  closeHelp();
   overlay.classList.remove("hidden");
 }
 function hideOverlay() { overlay.classList.add("hidden"); }
+
+function openHelp() {
+  overlayMain.classList.add("hidden");
+  helpPanel.classList.remove("hidden");
+}
+function closeHelp() {
+  helpPanel.classList.add("hidden");
+  overlayMain.classList.remove("hidden");
+}
 
 let bannerTimer = 0;
 function showBanner(text, ms = 3000) {
@@ -258,7 +278,7 @@ function updatePlayer(dt, now) {
   player.x = Math.max(40, Math.min(WORLD.w - 40, player.x + vx * dt));
 
   if (canMove && keys["ArrowUp"] && player.onGround) {
-    player.vy = -560;
+    player.vy = -750;
     player.onGround = false;
   }
   player.vy += 1400 * dt;
@@ -286,8 +306,16 @@ function updatePlayer(dt, now) {
 /* ===== BOSS AI ===== */
 function updateBoss(dt, now) {
   if (boss.hp <= 0) return;
-  const dist = Math.abs(boss.x - player.x);
   boss.facing = player.x < boss.x ? -1 : 1;
+
+  // di chuyển: áp sát khi còn xa, lùi lại khi quá gần (giữ khoảng đánh)
+  const dist = Math.abs(boss.x - player.x);
+  if (dist > BOSS_CFG.keepMax) {
+    boss.x += Math.sign(player.x - boss.x) * BOSS_CFG.moveSpeed * dt;
+  } else if (dist < BOSS_CFG.keepMin) {
+    boss.x -= Math.sign(player.x - boss.x) * BOSS_CFG.moveSpeed * 0.6 * dt;
+  }
+  boss.x = Math.max(60, Math.min(WORLD.w - 60, boss.x));
 
   if (now >= boss.nextShotAt) {
     boss.nextShotAt = now + BOSS_CFG.shotCd;
@@ -376,25 +404,39 @@ function checkEnd() {
 async function startGame() {
   STATE.current = "loading";
   showOverlay("ĐANG TẢI…", "Đang khởi tạo model và camera", "", "home");
-  overlayBtn.style.display = "none";
-  try {
-    await initPose();
-  } catch (err) {
-    console.warn("Pose init failed:", err);
-    STATE.poseAvailable = false;
-    showBanner("Không khởi tạo được pose — chơi bằng phím 1/2/3 nhé!", 6000);
+  overlayActions.classList.add("hidden");
+  if (!STATE.poseAvailable) {
+    try {
+      await initPose();
+    } catch (err) {
+      console.warn("Pose init failed:", err);
+      STATE.poseAvailable = false;
+      showBanner("Không khởi tạo được pose — chơi bằng phím 1/2/3 nhé!", 6000);
+    }
   }
-  overlayBtn.style.display = "";
+  overlayActions.classList.remove("hidden");
   startPlaying();
 }
 
 function startPlaying() {
+  closeHelp();
   resetGame();
   STATE.current = "playing";
   hideOverlay();
   if (!STATE.poseAvailable) {
     showBanner("Chế độ phím: 1 = bắn, 2 = cầu nổ, 3 = khiên, ↑↓←→ di chuyển", 6000);
   }
+}
+
+function goHome() {
+  STATE.current = "home";
+  resetGame();
+  showOverlay(
+    "POSE FIGHTER",
+    "Điều khiển bằng tư thế qua camera — chiến thắng boss!",
+    "BẮT ĐẦU",
+    "home"
+  );
 }
 
 /* ===== POSE DETECTION ===== */
@@ -404,8 +446,8 @@ let lastPose = "idle";
 function resolveClass(className) {
   if (!className) return null;
   const c = className.trim().toLowerCase();
-  for (const [action, key] of Object.entries(POSE_MAP)) {
-    if (String(key).toLowerCase() === c || action === c) return action;
+  for (const [cls, action] of Object.entries(POSE_MAP)) {
+    if (cls.toLowerCase() === c || String(action).toLowerCase() === c) return action;
   }
   return null;
 }
@@ -430,11 +472,31 @@ async function initPose() {
   video.srcObject = stream;
   await new Promise((res) => { video.onloadedmetadata = () => res(); });
   await video.play();
+  if (video.videoWidth && video.videoHeight) {
+    // posenet đọc video.width/height (DOM attrs) để scale keypoints;
+    // nếu = 0 → mọi position về (0,0). CSS width:100% vẫn giữ layout.
+    video.width = video.videoWidth;
+    video.height = video.videoHeight;
+    poseCanvas.width = video.videoWidth;
+    poseCanvas.height = video.videoHeight;
+  }
 
   STATE.poseAvailable = true;
   hideBanner();
   showBanner("Pose đã sẵn sàng — chơi thôi!", 2500);
   startPoseLoop();
+}
+
+function drawPoseSkeleton(pose) {
+  poseCtx.clearRect(0, 0, poseCanvas.width, poseCanvas.height);
+  if (!pose || !pose.keypoints) return;
+  const minConfidence = 0.5;
+  try {
+    tmPose.drawKeypoints(pose.keypoints, minConfidence, poseCtx, 6, "lime", "#0b3d0b");
+    tmPose.drawSkeleton(pose.keypoints, minConfidence, poseCtx, 3, "lime");
+  } catch (err) {
+    console.warn("drawSkeleton error", err);
+  }
 }
 
 function startPoseLoop() {
@@ -463,6 +525,7 @@ function startPoseLoop() {
       }
       poseLabel.textContent = "Pose: " + (best ? best.className : "?") +
         " (" + Math.round(conf * 100) + "%)";
+      drawPoseSkeleton(pose);
     } catch (err) {
       console.warn("pose loop error", err);
     }
@@ -624,6 +687,9 @@ window.addEventListener("DOMContentLoaded", async () => {
     if (STATE.current === "home") startGame();
     else startPlaying();
   });
+  overlayBtn2.addEventListener("click", goHome);
+  helpBtn.addEventListener("click", openHelp);
+  helpBack.addEventListener("click", closeHelp);
   resetGame();
   requestAnimationFrame(tick);
 });

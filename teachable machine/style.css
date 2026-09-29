@@ -89,11 +89,25 @@ body {
   overflow: hidden;
   box-shadow: 0 8px 24px rgba(0,0,0,.55);
 }
+#video-box {
+  position: relative;
+  line-height: 0;
+}
 #video {
   display: block;
   width: 100%;
+  height: auto; /* attr width/height (cần cho posenet) là presentational hint → phải override */
   transform: scaleX(-1);
   background: #000;
+}
+#pose-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(-1);
+  pointer-events: none;
 }
 #pose-label {
   font-size: 12px;
@@ -169,6 +183,51 @@ body {
   transition: transform .1s ease;
 }
 #overlay-btn:active { transform: translateY(4px); box-shadow: 0 2px 0 #b8860b; }
+
+#overlay-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+.btn-secondary {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 12px 26px;
+  border: 2px solid var(--gold);
+  border-radius: 40px;
+  cursor: pointer;
+  color: var(--gold);
+  background: rgba(20, 24, 60, .85);
+  transition: transform .1s ease, background .15s ease;
+}
+.btn-secondary:hover { background: rgba(255, 213, 74, .15); }
+.btn-secondary:active { transform: translateY(3px); }
+
+#help-panel {
+  max-width: 640px;
+  max-height: 440px;
+  overflow-y: auto;
+  text-align: left;
+  background: rgba(13, 16, 48, .95);
+  border: 2px solid var(--gold);
+  border-radius: 12px;
+  padding: 18px 24px;
+}
+#help-panel h2 {
+  text-align: center;
+  color: var(--gold);
+  letter-spacing: 4px;
+  margin-bottom: 10px;
+  font-size: 26px;
+}
+#help-content h3 { color: var(--gold); font-size: 15px; margin: 12px 0 4px; letter-spacing: 1px; }
+#help-content p, #help-content li { font-size: 14px; color: #c6cbee; line-height: 1.5; }
+#help-content ul { padding-left: 20px; }
+#help-content b { color: #fff; }
+#help-back { display: block; margin: 14px auto 0; }
 
 #confetti-layer { position: absolute; inset: 0; pointer-events: none; z-index: 35; overflow: hidden; }
 .confetti {
