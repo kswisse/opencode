@@ -17,7 +17,7 @@ const SKILL1 = { dmg: 100, cd: 3000, speed: 620 };
 const SKILL2 = { dmg: 150, cd: 5000, fuse: 1000 };
 const BOSS_CFG = {
   shotDmg: 100, shotCd: 3000,
-  slashDmg: 150, slashCd: 4000, slashRange: 220,
+  bombDmg: 150, bombCd: 5000, bombFuse: 1000, bombR: 46,
   shieldCdMin: 8000, shieldCdMax: 12000, shieldDur: 2000,
   moveSpeed: 95, keepMin: 120, keepMax: 200
 };
@@ -55,24 +55,23 @@ const STATE = {
 };
 
 const player = {
-  x: 330, y: WORLD.groundY, w: 90, h: 140,
+  x: 330, y: WORLD.groundY, w: 90, h: 140, drawH: 210,
   hp: PLAYER_MAX_HP, maxHp: PLAYER_MAX_HP,
   facing: 1, vy: 0, onGround: true, crouch: false,
   invulnUntil: 0, shieldByKey: false,
   cd1: 0, cd2: 0
 };
 const boss = {
-  x: 720, y: WORLD.groundY, w: 110, h: 160,
+  x: 720, y: WORLD.groundY, w: 110, h: 160, drawH: 200,
   hp: BOSS_MAX_HP, maxHp: BOSS_MAX_HP,
   facing: -1,
-  shieldUntil: 0, nextShotAt: 0, nextSlashAt: 0, nextShieldAt: 0
+  shieldUntil: 0, nextShotAt: 0, nextBombAt: 0, nextShieldAt: 0
 };
 
 const keys = Object.create(null);
 let projectiles = [];
 let bursts = [];
 let reticles = [];
-let slashes = [];
 const images = { player: null, boss: null };
 
 /* ===== ẢNH + FALLBACK ===== */
@@ -110,7 +109,13 @@ function drawFallback(c, kind, x, y, w, h) {
 
 function drawFighter(c, img, fallbackKind, e, now) {
   const bob = e.onGround === false ? 0 : Math.sin(now / 320 + e.x) * 2;
-  const drawW = e.w, drawH = e.h;
+  let drawW, drawH;
+  if (img && img.width && img.height) {
+    drawH = e.drawH || e.h;
+    drawW = drawH * (img.width / img.height);
+  } else {
+    drawW = e.w; drawH = e.h;
+  }
   const drawX = e.x - drawW / 2;
   const drawY = e.y - drawH + bob;
   c.save();
@@ -183,9 +188,9 @@ function resetGame() {
   boss.x = 720; boss.hp = BOSS_MAX_HP; boss.shieldUntil = 0;
   const now = performance.now();
   boss.nextShotAt = now + 2500;
-  boss.nextSlashAt = now + 4000;
+  boss.nextBombAt = now + 4000;
   boss.nextShieldAt = now + (BOSS_CFG.shieldCdMin + BOSS_CFG.shieldCdMax) / 2;
-  projectiles = []; bursts = []; reticles = []; slashes = [];
+  projectiles = []; bursts = []; reticles = [];
 }
 
 function updateHUD() {
@@ -241,6 +246,7 @@ function trySkill2(now = performance.now()) {
   if (now < player.cd2) { showBanner("Skill 2 đang hồi chiêu", 1200); return; }
   player.cd2 = now + SKILL2.cd;
   reticles.push({
+    owner: "player",
     x: boss.x, y: boss.y - boss.h * 0.5,
     explodeAt: now + SKILL2.fuse,
     dmg: SKILL2.dmg, r: 46
@@ -329,10 +335,14 @@ function updateBoss(dt, now) {
     });
   }
 
-  if (dist < BOSS_CFG.slashRange && now >= boss.nextSlashAt && player.onGround) {
-    boss.nextSlashAt = now + BOSS_CFG.slashCd;
-    slashes.push({ x: player.x, y: player.y - player.h * 0.5, born: now });
-    applyDamageTo(player, BOSS_CFG.slashDmg, now);
+  if (now >= boss.nextBombAt) {
+    boss.nextBombAt = now + BOSS_CFG.bombCd;
+    reticles.push({
+      owner: "boss",
+      x: player.x, y: player.y - player.h * 0.5,
+      explodeAt: now + BOSS_CFG.bombFuse,
+      dmg: BOSS_CFG.bombDmg, r: BOSS_CFG.bombR
+    });
   }
 
   if (now >= boss.nextShieldAt) {
@@ -370,20 +380,22 @@ function updateEffects(now) {
   for (let i = reticles.length - 1; i >= 0; i--) {
     const r = reticles[i];
     if (now >= r.explodeAt) {
-      applyDamageTo(boss, r.dmg, now);
+      const target = r.owner === "boss" ? player : boss;
+      applyDamageTo(target, r.dmg, now);
       bursts.push({
         x: r.x, y: r.y, born: now,
-        text: "-" + r.dmg, shielded: now < boss.shieldUntil, big: true
+        text: "-" + r.dmg, big: true,
+        shielded: r.owner === "boss" ? playerHasShield(now) : now < boss.shieldUntil
       });
-      // nổ bay mất đạn boss trong bán kính
+      // nổ bay mất đạn của phía bên kia trong bán kính
+      const enemySide = r.owner === "boss" ? "player" : "boss";
       projectiles = projectiles.filter(
-        (p) => p.owner === "boss" && Math.abs(p.x - r.x) > 90
+        (p) => p.owner !== enemySide || Math.abs(p.x - r.x) > 90
       );
       reticles.splice(i, 1);
     }
   }
   bursts = bursts.filter((b) => now - b.born < 900);
-  slashes = slashes.filter((s) => now - s.born < 300);
 }
 
 function checkEnd() {
@@ -575,17 +587,14 @@ function drawShield(c, e, now, isBoss) {
   const active = isBoss ? now < e.shieldUntil : playerHasShield(now);
   if (!active) return;
   const dir = isBoss ? -1 : 1;
-  const r = Math.max(e.w, e.h) * 0.72;
+  const dh = e.drawH || e.h;
+  const r = Math.max(e.w, dh) * 0.62;
+  const cx = e.x + dir * 20, cy = e.y - dh * 0.5;
   c.save();
   c.strokeStyle = "rgba(120, 220, 255, .95)";
   c.fillStyle = "rgba(120, 220, 255, .22)";
   c.lineWidth = 5;
-  c.beginPath();
-  c.arc(e.x + dir * 34, e.y - e.h * 0.5, r, -Math.PI * 0.75, Math.PI * 0.75);
-  c.stroke();
-  c.beginPath();
-  c.arc(e.x + dir * 34, e.y - e.h * 0.5, r, -Math.PI * 0.75, Math.PI * 0.75);
-  c.fill();
+  c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill(); c.stroke();
   c.restore();
 }
 
@@ -607,16 +616,17 @@ function render(c, now) {
 
   if (STATE.current === "home" || STATE.current === "loading") return;
 
-  drawShield(c, boss, now, true);
   drawFighter(c, images.boss, "boss", boss, now);
-  drawShield(c, player, now, false);
+  drawShield(c, boss, now, true);
   drawFighter(c, images.player, "player", player, now);
+  drawShield(c, player, now, false);
 
   // hồng tâm skill 2
   for (const r of reticles) {
     const t = Math.max(0, (r.explodeAt - now) / SKILL2.fuse);
+    const col = r.owner === "boss" ? "#ff5252" : "#ff4d94";
     c.save();
-    c.strokeStyle = "#ff4d94";
+    c.strokeStyle = col;
     c.lineWidth = 4;
     c.beginPath(); c.arc(r.x, r.y, r.r, 0, Math.PI * 2); c.stroke();
     c.beginPath(); c.arc(r.x, r.y, r.r * t, 0, Math.PI * 2); c.stroke();
@@ -624,7 +634,7 @@ function render(c, now) {
     c.moveTo(r.x - r.r * 1.3, r.y); c.lineTo(r.x + r.r * 1.3, r.y);
     c.moveTo(r.x, r.y - r.r * 1.3); c.lineTo(r.x, r.y + r.r * 1.3);
     c.stroke();
-    c.fillStyle = "rgba(255,77,148,.2)";
+    c.fillStyle = r.owner === "boss" ? "rgba(255,82,82,.2)" : "rgba(255,77,148,.2)";
     c.beginPath(); c.arc(r.x, r.y, r.r, 0, Math.PI * 2); c.fill();
     c.restore();
   }
@@ -636,19 +646,6 @@ function render(c, now) {
     c.shadowColor = c.fillStyle;
     c.shadowBlur = 14;
     c.beginPath(); c.arc(p.x, p.y, p.r, 0, Math.PI * 2); c.fill();
-    c.restore();
-  }
-
-  // hiệu ứng chém
-  for (const s of slashes) {
-    const a = 1 - (now - s.born) / 300;
-    c.save();
-    c.globalAlpha = Math.max(0, a);
-    c.strokeStyle = "#fff";
-    c.lineWidth = 7;
-    c.beginPath();
-    c.arc(s.x, s.y, 60, -Math.PI * 0.8, Math.PI * 0.3);
-    c.stroke();
     c.restore();
   }
 
