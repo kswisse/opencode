@@ -19,7 +19,7 @@ const BOSS_CFG = {
   shotDmg: 100, shotCd: 3000,
   bombDmg: 150, bombCd: 5000, bombFuse: 1000, bombR: 46,
   shieldCdMin: 8000, shieldCdMax: 12000, shieldDur: 2000,
-  moveSpeed: 95, keepMin: 120, keepMax: 200
+  moveSpeed: 95, keepMin: 170, keepMax: 200
 };
 const HEAL_PER_SEC = 5;
 const SHIELD_FACTOR = 0.25;
@@ -272,6 +272,13 @@ function movementAllowsKeys() {
   return true;
 }
 
+function spriteHalfW(e, img) {
+  if (img && img.width && img.height) {
+    return (e.drawH || e.h) * (img.width / img.height) / 2;
+  }
+  return e.w / 2;
+}
+
 function updatePlayer(dt, now) {
   const canMove = movementAllowsKeys();
   player.crouch = canMove && !!keys["ArrowDown"] && player.onGround;
@@ -282,6 +289,22 @@ function updatePlayer(dt, now) {
     if (keys["ArrowLeft"]) { vx = -230; player.facing = -1; }
   }
   player.x = Math.max(40, Math.min(WORLD.w - 40, player.x + vx * dt));
+
+  // không cho sprite đi xuyên boss (va chạm mềm theo bề rộng sprite thật)
+  if (boss.hp > 0) {
+    const minSep = spriteHalfW(player, images.player) + spriteHalfW(boss, images.boss);
+    const dx = player.x - boss.x;
+    if (Math.abs(dx) < minSep) {
+      player.x = dx >= 0 ? boss.x + minSep : boss.x - minSep;
+      player.x = Math.max(40, Math.min(WORLD.w - 40, player.x));
+    }
+  }
+
+  // giữ sprite trong khung hình theo bề rộng thật
+  {
+    const hw = spriteHalfW(player, images.player);
+    player.x = Math.max(hw, Math.min(WORLD.w - hw, player.x));
+  }
 
   if (canMove && keys["ArrowUp"] && player.onGround) {
     player.vy = -750;
@@ -321,7 +344,7 @@ function updateBoss(dt, now) {
   } else if (dist < BOSS_CFG.keepMin) {
     boss.x -= Math.sign(player.x - boss.x) * BOSS_CFG.moveSpeed * 0.6 * dt;
   }
-  boss.x = Math.max(60, Math.min(WORLD.w - 60, boss.x));
+  boss.x = Math.max(spriteHalfW(boss, images.boss), Math.min(WORLD.w - spriteHalfW(boss, images.boss), boss.x));
 
   if (now >= boss.nextShotAt) {
     boss.nextShotAt = now + BOSS_CFG.shotCd;
