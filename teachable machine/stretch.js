@@ -51,18 +51,19 @@ const STATE = {
   poseAvailable: false,
   poseConfidence: 0,
   poseChangedAt: 0,
+  poseEnteredAt: 0,     // thời điểm STATE.pose đổi giá trị hiện tại (debounce giữ phím)
   last: null
 };
 
 const player = {
-  x: 330, y: WORLD.groundY, w: 90, h: 140, drawH: 210,
+  x: 330, y: WORLD.groundY, w: 90, h: 140, drawH: 180,
   hp: PLAYER_MAX_HP, maxHp: PLAYER_MAX_HP,
   facing: 1, vy: 0, onGround: true, crouch: false,
   invulnUntil: 0, shieldByKey: false,
   cd1: 0, cd2: 0
 };
 const boss = {
-  x: 720, y: WORLD.groundY, w: 110, h: 160, drawH: 200,
+  x: 720, y: WORLD.groundY, w: 110, h: 160, drawH: 170,
   hp: BOSS_MAX_HP, maxHp: BOSS_MAX_HP,
   facing: -1,
   shieldUntil: 0, nextShotAt: 0, nextBombAt: 0, nextShieldAt: 0
@@ -268,8 +269,10 @@ function applyDamageTo(target, amount, now) {
 }
 
 function movementAllowsKeys() {
-  if (STATE.poseAvailable && STATE.pose !== "idle") return false;
-  return true;
+  if (!STATE.poseAvailable || STATE.pose === "idle") return true;
+  // pose nhấp nháy (conf dao động quanh ngưỡng) không được cắt movement ngay:
+  // chỉ chặn phím khi pose ≠ idle đã ổn định đủ lâu
+  return performance.now() - STATE.poseEnteredAt < 400;
 }
 
 function spriteHalfW(e, img) {
@@ -552,10 +555,16 @@ function startPoseLoop() {
           lastPose = mapped;
           STATE.poseChangedAt = performance.now();
         }
-        STATE.pose = mapped;
+        if (STATE.pose !== mapped) {
+          STATE.pose = mapped;
+          STATE.poseEnteredAt = performance.now();
+        }
         STATE.poseConfidence = conf;
       } else if (performance.now() - STATE.poseChangedAt > 500) {
-        STATE.pose = "idle";
+        if (STATE.pose !== "idle") {
+          STATE.pose = "idle";
+          STATE.poseEnteredAt = performance.now();
+        }
         STATE.poseConfidence = conf;
       }
       poseLabel.textContent = "Pose: " + (best ? best.className : "?") +
