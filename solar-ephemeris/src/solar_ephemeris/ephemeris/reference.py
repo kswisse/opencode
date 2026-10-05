@@ -17,7 +17,8 @@ epoch) before being handed to the caller. This module never imports SPICE.
 
 from __future__ import annotations
 
-from typing import Protocol, runtime_checkable
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 from solar_ephemeris.ephemeris.mapping import naif_id
 from solar_ephemeris.ephemeris.time import et_to_jd_tdb, jd_tdb_to_et, require_tdb
@@ -29,6 +30,9 @@ from solar_ephemeris.ephemeris.types import (
     ReferenceState,
 )
 from solar_ephemeris.frames.identifiers import ReferenceFrame, TimeScale
+
+if TYPE_CHECKING:  # annotation only; comparison imports this module at runtime
+    from solar_ephemeris.physics.state import StateMeta
 
 
 @runtime_checkable
@@ -106,3 +110,39 @@ def get_state(
             f"{et_to_jd_tdb(et)!r} for et={et!r}"
         )
     return state
+
+
+def lookup_reference_series(
+    provider: ReferenceProvider,
+    *,
+    body: str,
+    epochs_jd: Sequence[float],
+    model_meta: StateMeta | None = None,
+    transform: str | None = None,
+) -> list[ReferenceState]:
+    """Read-only chain of reference states at already-recorded epochs (KTD2).
+
+    The additive neighbour of ``compare_trajectory``: the same gate ORDER —
+    NAIF mapping first, then :func:`get_state`'s metadata gate per epoch
+    (frame → center → TDB → mapping → coverage → honesty audit) — and, when
+    the caller passes ``model_meta`` together with ``transform``, the same
+    ``assert_compatible`` gate on the first state that ``compare_trajectory``
+    runs before it subtracts anything. Nothing is subtracted here, nothing is
+    written, and ``ComparisonResult`` (the committed record schema) is
+    untouched.
+
+    Any exception propagates before a chain can be returned — a refused
+    lookup yields no states at all, never a truncated prefix (KTD5).
+    """
+    naif_id(body)  # unmapped body raises even when epochs_jd is empty
+    states = [
+        get_state(provider, body=body, epoch_jd=epoch_jd)
+        for epoch_jd in epochs_jd
+    ]
+    if model_meta is not None and states:
+        # Local import: comparison.py imports this module for the protocol,
+        # so assert_compatible cannot be a module-level import here.
+        from solar_ephemeris.ephemeris.comparison import assert_compatible
+
+        assert_compatible(model_meta, states[0], body=body, transform=transform)
+    return states
