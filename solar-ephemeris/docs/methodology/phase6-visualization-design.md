@@ -36,7 +36,7 @@ Phase 1–5 đã tạo kho kết quả JSON/NPZ được chấp nhận và đón
 - KD2. Static-first; interactive viewer chỉ là wrapper mỏng deferred (session-settled: user-directed — chosen over dashboard-first: ưu tiên reproducibility > polish) — Governs R4, R14.
 - KD3. matplotlib là dependency plotting duy nhất mới (session-settled: user-approved — sole new plotting dependency: dự án numpy-only, thêm tối thiểu) — Governs R29.
 - KD4. Tài liệu này viết tại `docs/methodology/phase6-visualization-design.md`, tiếng Việt, heading số kiểu Phase 4/5 (user-approved tại scoping confirmation) — Governs R28.
-- KD5. Viewer tương tác (nếu có) chỉ gọi cùng bộ `plot_*`, không nhân đôi logic — Governs R30.
+- KD5. Viewer tương tác (nếu có) chỉ gọi cùng bộ `plot_*`, không nhân đôi logic.
 
 ### Requirements
 
@@ -50,7 +50,7 @@ Phase 1–5 đã tạo kho kết quả JSON/NPZ được chấp nhận và đón
 
 **Provenance**
 
-- R6. Mỗi figure có một sidecar JSON máy-đọc-được chứa tối thiểu: `figure_id`, `experiment_id`, `configuration_hash`, `output_hash`, `figure_data_hash`, bodies, epoch, duration, integrator, timestep, frame, origin, time_scale, units, reference_dataset, reference_kernel (kèm sha256 khi có), source (stored|derived|aggregate), gaps[], style_version, software/matplotlib version, generation timestamp — cùng caption chứa các token provenance chính.
+- R6. Mỗi figure có một sidecar JSON máy-đọc-được. Key cấp figure luôn có: `figure_id`, `figure_data_hash`, `source` (stored|derived|aggregate), `gaps[]`, `style_version`, `frame`, `origin`, `time_scale`, `units`, software/matplotlib version, generation timestamp. Các key record — `experiment_id`, `configuration_hash`, `output_hash`, bodies, epoch, duration, integrator, timestep, reference_dataset, reference_kernel (kèm sha256 khi có) — ghi trực tiếp trên sidecar khi figure lấy từ một record; với figure đa-record (V7/V8/V9 gộp nhiều record), các key đó nằm trong mảng `sources[]`, mỗi entry là một record nguồn (record aggregate liệt kê các record per-run đóng góp, khi file không tự mang hash). Caption chứa các token provenance chính.
 - R7. Sidecar ghi theo ngữ nghĩa `write_record`: `sort_keys=True`, `allow_nan=False` — series không hữu hạn không được ghi xuống JSON.
 - R8. `figure_data_hash` là SHA-256 trên các mảng dữ liệu vẽ (cùng construction với `output_hash` hiện có — theo byte mảng, không theo file); sha256 của PNG chỉ là thông tin phụ, không dùng làm định danh.
 - R9. Record thiếu field provenance (2 record "reused" `results/experiment_D/T2_30d`, `T3_30d`): fallback theo `comparison.model_metadata` và/hoặc record đích `reused_from` (kiểm tra `configuration_hash` khớp trước khi tin), sidecar ghi `provenance_complete: false` kèm danh sách field thiếu.
@@ -88,7 +88,7 @@ Phase 1–5 đã tạo kho kết quả JSON/NPZ được chấp nhận và đón
 ### Acceptance Examples
 
 - AE1. Với `results/experiment_E/horizon_1d` và không có kernel: `plot_model_vs_reference` trả figure V3 + sidecar ghi provider fixture, coverage −1d…+10d, `reference_kernel: fixture`, gaps rỗng. Covers R18, R6.
-- AE2. Với `results/experiment_E/horizon_365d` và không có kernel: nhận `DataGapError` mang report máy-đọc-được, không ghi PNG, report nêu rõ epoch vượt coverage fixture. Covers R3, R27.
+- AE2. Với `results/experiment_E/horizon_365d` và không có kernel: nhận `DataGapError` mang report máy-đọc-được, không ghi PNG, report nêu rõ epoch vượt coverage fixture. Covers R3.
 - AE3. Với `results/experiment_D/T2_30d`: reader redirect sang `experiment_C/tier_T2` sau khi xác nhận `configuration_hash` khớp; figure và sidecar ghi rõ chuỗi `reused_from`. Covers R9, R30.
 - AE4. Với `results/experiment_E/horizon_365d` (kernel có sẵn): V9 vẽ đủ series và annotation "không phân biệt — chỉ report", không in lớp tăng trưởng. Covers R24.
 
@@ -154,7 +154,6 @@ flowchart TB
   G --> ST[style roles + units KTD7 / R10-R15]
   ST --> F["8 plot_* tất định (R14)"]
   F --> O["figures/ PNG + sidecar.json (KTD9)"]
-  GAP -.-> O
 ```
 
 Chọn provider cho V3 (nhánh quyết định duy nhất chạm runtime bên ngoài):
@@ -343,12 +342,12 @@ U1 → U2 → (U3, U4 song song) → U5 → U6; U3/U4 không phụ thuộc nhau 
 - **Dependencies:** U2.
 - **Files:** `src/solar_ephemeris/visualization/{provenance,style,units}.py`, `tests/unit/test_viz_provenance.py`.
 - **Approach:**
-  1. `provenance.py`: build sidecar theo R6, ghi temp → rename cùng PNG, từ chối non-finite trước khi render (R7/KTD9).
+  1. `provenance.py`: build sidecar theo R6 (figure một record ghi key record trực tiếp; figure đa-record ghi `sources[]`), ghi temp → rename cùng PNG, từ chối non-finite trước khi render (R7/KTD9).
   2. `figure_data_hash` tái dùng chính construction `output_hash` (name + shape + bytes).
   3. `style.py`: bảng role kiểu HTD + `style_version`; rcParams/DPI/font cố định tại một chỗ.
   4. `units.py`: helper m/AU, m/s/km/s nhận hằng từ `physics.constants` và `ephemeris.units`.
 - **Test scenarios:**
-  - Happy: sidecar xuất xanh chứa đủ mọi key R6 (assert theo danh sách token).
+  - Happy: sidecar xuất xanh chứa đủ mọi key R6 (assert theo danh sách token); với figure đa-record, các key record nằm trong `sources[]` mỗi entry.
   - Edge: series chứa NaN → `DataGapError` trước, không tồn tại PNG mồ côi (kiểm bằng danh sách file output).
   - Happy: render hai lần cùng mảng → `figure_data_hash` bằng nhau, PNG sha256 (nếu khác) không làm fail.
   - Error: `allow_nan=False` không bao giờ raise khi sidecar ghi hợp lệ.
@@ -382,7 +381,7 @@ U1 → U2 → (U3, U4 song song) → U5 → U6; U3/U4 không phụ thuộc nhau 
 - **Dependencies:** U2, U4 (U3 không bắt buộc — V6–V9 không cần lookup).
 - **Files:** `src/solar_ephemeris/visualization/api.py` (4 hàm còn lại), `src/solar_ephemeris/visualization/composition.py`, `tests/unit/test_viz_api_multi_run.py`.
 - **Approach:**
-  1. `composition.py` chứa bảng run-set (theo KTD8); test đối chiếu với hằng `experiments/_common.py` qua shim `sys.path` (mẫu `test_experiment_contract`).
+  1. `composition.py` chứa bảng run-set (theo KTD8); test đối chiếu với hằng `experiments/_common.py` qua shim `sys.path` (mẫu `test_experiment_contract`). Đăng ký Fig-09…Fig-13 vào registry (id, nguồn, variant) khớp bảng HTD.
   2. `plot_conservation` lấy series từ `analysis/*`, sidecar ghi `source: derived`.
   3. `plot_convergence` đọc aggregate, vẽ floor line, không xếp hạng (R22).
   4. `plot_horizon_error` đọc `growth_classification` từ record; `discriminated: false` → annotation bắt buộc.
