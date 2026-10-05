@@ -14,6 +14,10 @@ dev = ["pytest>=8.0"]
 # Live SPICE access (Phase 4, ephemeris/spice_backend.py ONLY). Core physics
 # runs without it — the default test suite is kernel-free by design.
 spice = ["spiceypy>=8,<9"]
+# Static-first plotting (Phase 6, KD3: matplotlib is the only new plotting
+# dependency). Pinned tighter than core and kept OUT of core deps — Gate A
+# stays kernel-free and matplotlib-free by design (R29).
+viz = ["matplotlib>=3.11,<4"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
