@@ -137,3 +137,42 @@ def load_run(out_dir: Path) -> tuple[Trajectory, RunRecord]:
             meta=_traj_meta_from_json(str(data["traj_meta_json"])),
         )
     return traj, record
+
+
+#: Arrays persisted by run_to_file - a bare trajectory.npz must carry all of
+#: them (KTD4: npz-only load, no run_record.json required).
+TRAJECTORY_NPZ_KEYS = (
+    "times",
+    "positions",
+    "velocities",
+    "gm",
+    "body_names",
+    "traj_meta_json",
+)
+
+
+def load_trajectory_npz(npz_path: Path) -> Trajectory:
+    """Reconstruct a Trajectory from a bare trajectory.npz (no run_record.json).
+
+    Same reconstruction as load_run; raises ValueError when an array is
+    missing or the npz is unreadable.
+    """
+    npz_path = Path(npz_path)
+    try:
+        data = np.load(npz_path, allow_pickle=False)
+    except (OSError, ValueError) as exc:
+        raise ValueError(f"{npz_path} is unreadable: {exc}") from exc
+    with data:
+        missing = [k for k in TRAJECTORY_NPZ_KEYS if k not in data.files]
+        if missing:
+            raise ValueError(
+                f"{npz_path} is missing required array(s): {', '.join(missing)}"
+            )
+        return Trajectory(
+            times=data["times"],
+            positions=data["positions"],
+            velocities=data["velocities"],
+            gm=data["gm"],
+            body_names=tuple(str(n) for n in data["body_names"]),
+            meta=_traj_meta_from_json(str(data["traj_meta_json"])),
+        )

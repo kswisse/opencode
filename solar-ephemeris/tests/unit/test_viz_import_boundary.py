@@ -28,7 +28,7 @@ VIZ = SRC / "visualization"
 
 FORBIDDEN_NAMES = frozenset({"SimulationEngine", "run_to_file", "run_reproducible", "run_phase5"})
 FORBIDDEN_CALL_ATTRS = frozenset({"run", "propagate"})
-ALLOWED_PROJECT_ROOTS = frozenset({"physics", "frames", "simulation", "ephemeris", "analysis"})
+ALLOWED_PROJECT_ROOTS = frozenset({"physics", "frames", "simulation", "ephemeris", "analysis", "visualization"})
 
 
 def _source_files(directory: Path) -> list[Path]:
