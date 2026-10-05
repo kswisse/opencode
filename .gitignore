@@ -30,3 +30,12 @@ CV-1.docx
 
 # Tooling artifacts
 .playwright-mcp/
+
+# Embedded project repos (each has its own git)
+AI Dermdiag/
+autoclip/
+evidence-engine/
+factoryguard-ai/
+opencode-skill-pack/
+quant-research-engine/
+repo2web/
