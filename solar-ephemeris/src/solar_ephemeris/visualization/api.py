@@ -65,7 +65,7 @@ from .loader import (
     RESULTS_DIRNAME,
     LoadedRecord,
     load_record,
-    load_trajectory,
+    load_trajectory_from,
 )
 from .normalize import NormalizedComparison, normalize_comparison
 from .providers import resolve_reference_series, select_provider
@@ -98,9 +98,10 @@ class FigureSpec:
 
 
 #: R25 - Fig-01..Fig-13, fields verbatim from the HTD table.
-#: ``variant`` is the same full-§6d record for all.
-FIGURE_REGISTRY: Final[dict[str, FigureSpec]] = {
-    "fig-01": FigureSpec(
+#: ``variant`` is the same full-§6d record for all. The dict is derived
+#: from the tuple so each figure id exists exactly once.
+_FIGURE_SPECS: Final[tuple[FigureSpec, ...]] = (
+    FigureSpec(
         id="fig-01",
         title="Quỹ đạo hệ trong SSB-ICRS (XY, AU)",
         feature="V1",
@@ -110,7 +111,7 @@ FIGURE_REGISTRY: Final[dict[str, FigureSpec]] = {
         variant="full §6d",
         state="kernel-agnostic",
     ),
-    "fig-02": FigureSpec(
+    FigureSpec(
         id="fig-02",
         title="Zoom quỹ đạo Đất–Trăng",
         feature="V1",
@@ -120,7 +121,7 @@ FIGURE_REGISTRY: Final[dict[str, FigureSpec]] = {
         variant="full §6d",
         state="kernel-agnostic",
     ),
-    "fig-03": FigureSpec(
+    FigureSpec(
         id="fig-03",
         title="Bố cục 3D tĩnh 10 body",
         feature="V2",
@@ -130,7 +131,7 @@ FIGURE_REGISTRY: Final[dict[str, FigureSpec]] = {
         variant="full §6d",
         state="kernel-agnostic",
     ),
-    "fig-04": FigureSpec(
+    FigureSpec(
         id="fig-04",
         title="Model vs DE440 (Đất)",
         feature="V3",
@@ -140,7 +141,7 @@ FIGURE_REGISTRY: Final[dict[str, FigureSpec]] = {
         variant="full §6d",
         state="cần kernel",
     ),
-    "fig-05": FigureSpec(
+    FigureSpec(
         id="fig-05",
         title="Model vs fixture (V3 kernel-free)",
         feature="V3",
@@ -150,7 +151,7 @@ FIGURE_REGISTRY: Final[dict[str, FigureSpec]] = {
         variant="full §6d",
         state="kernel-free",
     ),
-    "fig-06": FigureSpec(
+    FigureSpec(
         id="fig-06",
         title="Lỗi vị trí theo thời gian (formal D 7d)",
         feature="V4",
@@ -160,7 +161,7 @@ FIGURE_REGISTRY: Final[dict[str, FigureSpec]] = {
         variant="full §6d",
         state="stored",
     ),
-    "fig-07": FigureSpec(
+    FigureSpec(
         id="fig-07",
         title="Lỗi vị trí per-body theo tier (+gap 8 body)",
         feature="V4",
@@ -170,7 +171,7 @@ FIGURE_REGISTRY: Final[dict[str, FigureSpec]] = {
         variant="full §6d",
         state="stored",
     ),
-    "fig-08": FigureSpec(
+    FigureSpec(
         id="fig-08",
         title="Lỗi vận tốc per-body",
         feature="V5",
@@ -180,7 +181,7 @@ FIGURE_REGISTRY: Final[dict[str, FigureSpec]] = {
         variant="full §6d",
         state="stored",
     ),
-    "fig-09": FigureSpec(
+    FigureSpec(
         id="fig-09",
         title="Conservation: năng lượng/động lượng/động lượng góc",
         feature="V6",
@@ -190,7 +191,7 @@ FIGURE_REGISTRY: Final[dict[str, FigureSpec]] = {
         variant="full §6d",
         state="derived",
     ),
-    "fig-10": FigureSpec(
+    FigureSpec(
         id="fig-10",
         title="Convergence A1: lỗi cuối vs N + observed orders + floor",
         feature="V7",
@@ -200,7 +201,7 @@ FIGURE_REGISTRY: Final[dict[str, FigureSpec]] = {
         variant="full §6d",
         state="aggregate",
     ),
-    "fig-11": FigureSpec(
+    FigureSpec(
         id="fig-11",
         title="A2 divisor ratios + B ref-lattice (cảnh báo floor-dominated)",
         feature="V7",
@@ -210,7 +211,7 @@ FIGURE_REGISTRY: Final[dict[str, FigureSpec]] = {
         variant="full §6d",
         state="aggregate",
     ),
-    "fig-12": FigureSpec(
+    FigureSpec(
         id="fig-12",
         title="Ảnh hưởng số body (signal vs control)",
         feature="V8",
@@ -220,7 +221,7 @@ FIGURE_REGISTRY: Final[dict[str, FigureSpec]] = {
         variant="full §6d",
         state="stored",
     ),
-    "fig-13": FigureSpec(
+    FigureSpec(
         id="fig-13",
         title="Lỗi theo horizon 1/30/90/365d + annotation phân biệt",
         feature="V9",
@@ -230,7 +231,9 @@ FIGURE_REGISTRY: Final[dict[str, FigureSpec]] = {
         variant="full §6d",
         state="stored",
     ),
-}
+)
+
+FIGURE_REGISTRY: Final[dict[str, FigureSpec]] = {spec.id: spec for spec in _FIGURE_SPECS}
 
 
 # ---------------------------------------------------------------------------
@@ -352,23 +355,31 @@ def _reference_in_model_frame(
 
 
 def _stored_series(
-    norm: NormalizedComparison, resolved: dict, kind: str, record_path: str
+    norm: NormalizedComparison,
+    resolved: dict,
+    kind: str,
+    record_path: str,
+    *,
+    prefix: str = "",
+    gaps: list[dict] | None = None,
 ) -> tuple[list[tuple[str, np.ndarray, np.ndarray]], list[dict]]:
     """Plotted series + gaps from a stored comparison (KTD10).
 
     ``flat`` is single-series by design (no missing-body gaps); ``per_body``
     earns one gap per record body that carries no series. Nothing usable ->
     the caller raises ``DataGapError`` instead of drawing an empty figure.
+    ``prefix`` namespaces gap names for run-set figures (``<member>/<body>``);
+    pass ``gaps`` to append into a caller-owned list.
     """
     attr = f"{kind}_error"
+    out: list[dict] = gaps if gaps is not None else []
     series: list[tuple[str, np.ndarray, np.ndarray]] = []
-    gaps: list[dict] = []
     for name, entry in norm.by_body.items():
         values = getattr(entry, attr)
         if entry.times_s is None or values is None:
-            gaps.append(
+            out.append(
                 make_gap(
-                    name,
+                    f"{prefix}{name}",
                     reason="no stored error series",
                     detail=f"comparison for {name!r} carries no {attr} series",
                     source_path=record_path,
@@ -385,15 +396,15 @@ def _stored_series(
     if norm.shape == "per_body":
         for name in resolved.get("bodies") or ():
             if name not in norm.by_body:
-                gaps.append(
+                out.append(
                     make_gap(
-                        name,
+                        f"{prefix}{name}",
                         reason="no stored error series",
                         detail=f"record body {name!r} has no comparison entry",
                         source_path=record_path,
                     )
                 )
-    return series, gaps
+    return series, out
 
 
 # ---------------------------------------------------------------------------
@@ -419,7 +430,7 @@ def plot_trajectory(
     if mode not in ("2d", "3d"):
         raise ValueError(f"mode {mode!r} must be '2d' or '3d'")
     loaded = load_record(record_dir)
-    traj = load_trajectory(record_dir)
+    traj = load_trajectory_from(loaded)
     meta = traj.meta.state_meta
     frame = str(meta.frame)
 
@@ -508,7 +519,7 @@ def plot_model_vs_reference(
     translation descriptor (R12).
     """
     loaded = load_record(record_dir)
-    traj = load_trajectory(record_dir)
+    traj = load_trajectory_from(loaded)
     index = traj.body_names.index(body)
     pos_rel, _vel_rel, transform, identity = _reference_in_model_frame(
         traj,
@@ -583,7 +594,7 @@ def _plot_error(
 
     identity: dict = {}
     if norm.absent:
-        traj = load_trajectory(record_dir)
+        traj = load_trajectory_from(loaded)
         pos_rel, vel_rel, _transform, identity = _reference_in_model_frame(
             traj, kernel_path=kernel_path, source_path=record_path
         )
@@ -594,7 +605,7 @@ def _plot_error(
         else:
             error = np.linalg.norm(traj.velocities - vel_rel, axis=2)
         series = [
-            (name, traj.times.copy(), error[:, k])
+            (name, traj.times, error[:, k])
             for k, name in enumerate(traj.body_names)
         ]
         gaps: list[dict] = []
@@ -602,9 +613,7 @@ def _plot_error(
     else:
         resolved = loaded.resolved_record
         series, gaps = _stored_series(norm, resolved, kind, record_path)
-        frame = str(resolved.get("reference_frame") or "unspecified")
-        origin_desc = str(resolved.get("reference_origin") or "unspecified")
-        time_scale = str(resolved.get("time_scale") or "unspecified")
+        frame, origin_desc, time_scale = _frame_tokens([resolved])
         source = "stored"
 
     if not series:
@@ -626,10 +635,7 @@ def _plot_error(
         arrays[f"{name}_times_s"] = times
         arrays[f"{name}_{kind}_error"] = values
 
-    if kind == "position":
-        ylabel = position_label(unit).replace("position", "position error", 1)
-    else:
-        ylabel = velocity_label(unit).replace("velocity", "velocity error", 1)
+    ylabel = _error_ylabel(kind, unit)
 
     sidecar = build_sidecar(
         figure_id=figure_id,
@@ -659,16 +665,7 @@ def _plot_error(
             ax.set_ylabel(ylabel)
             if len(series) > 1:
                 ax.legend()
-            if gaps:
-                shown = ", ".join(gap["name"] for gap in gaps[:8])
-                ax.text(
-                    0.01,
-                    0.02,
-                    f"gaps: {len(gaps)} (missing {kind} series) - {shown}",
-                    transform=ax.transAxes,
-                    va="bottom",
-                    fontsize=8,
-                )
+            _annotate_gaps(ax, gaps, detail=f" (missing {kind} series)")
             return write_figure(fig, png_path=png_path, sidecar=sidecar, arrays=arrays)
         finally:
             plt.close(fig)
@@ -826,7 +823,7 @@ def _log_limits(*groups: np.ndarray, extra: Sequence[float] = ()) -> tuple[float
     return lo / pad, hi * pad
 
 
-def _annotate_gaps(ax, gaps: Sequence[dict], limit: int = 8) -> None:
+def _annotate_gaps(ax, gaps: Sequence[dict], limit: int = 8, detail: str = "") -> None:
     """Bottom-left gap banner (KTD5): the figure publishes WITH its gaps."""
     if not gaps:
         return
@@ -834,7 +831,7 @@ def _annotate_gaps(ax, gaps: Sequence[dict], limit: int = 8) -> None:
     ax.text(
         0.01,
         0.02,
-        f"gaps: {len(gaps)} - {shown}",
+        f"gaps: {len(gaps)}{detail} - {shown}",
         transform=ax.transAxes,
         va="bottom",
         fontsize=8,
@@ -870,45 +867,96 @@ def _member_comparison(
     return _record_payload(loaded), norm, record_path, loaded.resolved_record
 
 
-def _comparison_series(
-    member: str,
-    norm: NormalizedComparison,
-    resolved: dict,
-    record_path: str,
+def _collect_runset_series(
+    members: Sequence[Path],
+    *,
+    role_for,
     gaps: list[dict],
-) -> list[tuple[str, np.ndarray, np.ndarray]]:
-    """Stored position-error series of one member; one gap per body without."""
-    series: list[tuple[str, np.ndarray, np.ndarray]] = []
-    for body, entry in norm.by_body.items():
-        if entry.times_s is None or entry.position_error is None:
+    unit: str,
+) -> tuple[
+    list[dict],
+    list[tuple[str, str, str, int, np.ndarray, np.ndarray]],
+    dict[str, dict],
+]:
+    """Stored position-error series of every present member (V8/V9 shared).
+
+    Returns ``(sources, series, resolved_by_member)``; each member unable to
+    contribute a series leaves a ``gaps[]`` entry instead of raising (KTD5).
+    """
+    sources: list[dict] = []
+    series: list[tuple[str, str, str, int, np.ndarray, np.ndarray]] = []
+    fade: dict[str, int] = {}
+    resolved_by_member: dict[str, dict] = {}
+    for member_dir in members:
+        member = member_dir.name
+        found = _member_comparison(member_dir, gaps)
+        if found is None:
+            continue
+        payload, norm, record_path, resolved = found
+        sources.append(payload)
+        resolved_by_member[member] = resolved
+        role = role_for(member)
+        before = len(gaps)
+        body_series, _ = _stored_series(
+            norm,
+            resolved,
+            "position",
+            record_path,
+            prefix=f"{member}/",
+            gaps=gaps,
+        )
+        if not body_series and len(gaps) == before:
             gaps.append(
                 make_gap(
-                    f"{member}/{body}",
+                    member,
                     reason="no stored error series",
-                    detail=f"comparison for {body!r} carries no position_error series",
+                    detail=f"{member} carries no comparison payload",
                     source_path=record_path,
                 )
             )
-            continue
-        series.append(
-            (
-                body,
-                np.asarray(entry.times_s, dtype=np.float64),
-                np.asarray(entry.position_error, dtype=np.float64),
+        for body, times, values in body_series:
+            index = fade.get(role, 0)
+            fade[role] = index + 1
+            series.append(
+                (role, member, body, index, times, _position_in(values, unit))
+            )
+    return sources, series, resolved_by_member
+
+
+def _series_arrays(
+    series: Sequence[tuple[str, str, str, int, np.ndarray, np.ndarray]],
+) -> dict[str, np.ndarray]:
+    """Sidecar arrays of run-set series: ``<member>__<body>_*`` keys."""
+    arrays: dict[str, np.ndarray] = {}
+    for _role, member, body, _index, times, values in series:
+        arrays[f"{member}__{body}_times_s"] = times
+        arrays[f"{member}__{body}_position_error"] = values
+    return arrays
+
+
+def _require_any_series(
+    series: Sequence, gaps: list[dict], empty_name: str, empty_detail: str, exp_dir: Path
+) -> None:
+    """No member carried anything plottable -> refuse the whole figure (KTD4)."""
+    if series:
+        return
+    if not gaps:
+        gaps.append(
+            make_gap(
+                empty_name,
+                reason="no stored error series",
+                detail=empty_detail,
+                source_path=str(exp_dir),
             )
         )
-    if norm.shape == "per_body":
-        for body in resolved.get("bodies") or ():
-            if body not in norm.by_body:
-                gaps.append(
-                    make_gap(
-                        f"{member}/{body}",
-                        reason="no stored error series",
-                        detail=f"record body {body!r} has no comparison entry",
-                        source_path=record_path,
-                    )
-                )
-    return series
+    raise DataGapError(gaps)
+
+
+def _error_ylabel(kind: str, unit: str) -> str:
+    """Axis label ``position (m)`` -> ``position error (m)`` (likewise velocity)."""
+    if kind == "position":
+        return position_label(unit).replace("position", "position error", 1)
+    return velocity_label(unit).replace("velocity", "velocity error", 1)
 
 
 # ---------------------------------------------------------------------------
@@ -924,7 +972,7 @@ def plot_conservation(
 ) -> tuple[Path, Path]:
     """V6 - ΔE / |ΔP| / |ΔL| of ONE trajectory; sidecar ``source: derived``."""
     loaded = load_record(record_dir)
-    traj = load_trajectory(record_dir)
+    traj = load_trajectory_from(loaded)
     times = np.asarray(traj.times, dtype=np.float64)
 
     energy = np.asarray(total_energy(traj), dtype=np.float64)
@@ -1304,51 +1352,20 @@ def plot_body_count(
     gaps: list[dict] = []
     members = _check_runset(exp_dir, V8_RUNSET, gaps)
 
-    sources: list[dict] = []
-    series: list[tuple[str, str, str, int, np.ndarray, np.ndarray]] = []
-    fade: dict[str, int] = {}
-    for member_dir in members:
-        member = member_dir.name
-        found = _member_comparison(member_dir, gaps)
-        if found is None:
-            continue
-        payload, norm, record_path, resolved = found
-        sources.append(payload)
-        role = "control" if member.startswith("control_") else "signal"
-        before = len(gaps)
-        body_series = _comparison_series(member, norm, resolved, record_path, gaps)
-        if not body_series and len(gaps) == before:
-            gaps.append(
-                make_gap(
-                    member,
-                    reason="no stored error series",
-                    detail=f"{member} carries no comparison payload",
-                    source_path=record_path,
-                )
-            )
-        for body, times, values in body_series:
-            index = fade.get(role, 0)
-            fade[role] = index + 1
-            series.append(
-                (role, member, body, index, times, _position_in(values, unit))
-            )
-
-    if not series:
-        if not gaps:
-            gaps.append(
-                make_gap(
-                    "experiment C",
-                    reason="no stored error series",
-                    detail=f"no run-set member under {exp_dir} carries a series",
-                    source_path=str(exp_dir),
-                )
-            )
-        raise DataGapError(gaps)
-
-    arrays: dict[str, np.ndarray] = {}
-    for _role, member, body, _index, times, values in series:
-        arrays[f"{member}__{body}_times_s"] = times
-        arrays[f"{member}__{body}_position_error"] = values
+    sources, series, _resolved_by_member = _collect_runset_series(
+        members,
+        role_for=lambda member: "control" if member.startswith("control_") else "signal",
+        gaps=gaps,
+        unit=unit,
+    )
+    _require_any_series(
+        series,
+        gaps,
+        "experiment C",
+        f"no run-set member under {exp_dir} carries a series",
+        exp_dir,
+    )
+    arrays = _series_arrays(series)
 
     frame, origin_desc, time_scale = _frame_tokens(sources)
     sidecar = build_sidecar(
@@ -1364,7 +1381,7 @@ def plot_body_count(
         extra={"runset_members": [member.name for member in members]},
     )
 
-    ylabel = position_label(unit).replace("position", "position error", 1)
+    ylabel = _error_ylabel("position", unit)
 
     import matplotlib.pyplot as plt
 
@@ -1415,18 +1432,23 @@ def plot_horizon_error(
     gaps: list[dict] = []
     members = _check_runset(exp_dir, V9_RUNSET, gaps)
 
-    sources: list[dict] = []
-    series: list[tuple[str, str, str, int, np.ndarray, np.ndarray]] = []
-    fade: dict[str, int] = {}
+    sources, series, resolved_by_member = _collect_runset_series(
+        members,
+        role_for=lambda _member: "error",
+        gaps=gaps,
+        unit=unit,
+    )
+    _require_any_series(
+        series,
+        gaps,
+        "experiment E",
+        f"no horizon under {exp_dir} carries a series",
+        exp_dir,
+    )
+
     classifications: dict[str, str | None] = {}
     undecidable: list[str] = []
-    for member_dir in members:
-        member = member_dir.name
-        found = _member_comparison(member_dir, gaps)
-        if found is None:
-            continue
-        payload, norm, record_path, resolved = found
-        sources.append(payload)
+    for member, resolved in resolved_by_member.items():
         growth = resolved.get("growth_classification")
         if isinstance(growth, dict) and growth.get("discriminated") is True:
             selected = growth.get("selected")
@@ -1434,40 +1456,8 @@ def plot_horizon_error(
         else:
             classifications[member] = None
             undecidable.append(member)
-        before = len(gaps)
-        body_series = _comparison_series(member, norm, resolved, record_path, gaps)
-        if not body_series and len(gaps) == before:
-            gaps.append(
-                make_gap(
-                    member,
-                    reason="no stored error series",
-                    detail=f"{member} carries no comparison payload",
-                    source_path=record_path,
-                )
-            )
-        for body, times, values in body_series:
-            index = fade.get("error", 0)
-            fade["error"] = index + 1
-            series.append(
-                ("error", member, body, index, times, _position_in(values, unit))
-            )
 
-    if not series:
-        if not gaps:
-            gaps.append(
-                make_gap(
-                    "experiment E",
-                    reason="no stored error series",
-                    detail=f"no horizon under {exp_dir} carries a series",
-                    source_path=str(exp_dir),
-                )
-            )
-        raise DataGapError(gaps)
-
-    arrays: dict[str, np.ndarray] = {}
-    for _role, member, body, _index, times, values in series:
-        arrays[f"{member}__{body}_times_s"] = times
-        arrays[f"{member}__{body}_position_error"] = values
+    arrays = _series_arrays(series)
 
     extra: dict[str, object] = {
         "runset_members": [member.name for member in members],
@@ -1491,7 +1481,7 @@ def plot_horizon_error(
         extra=extra,
     )
 
-    ylabel = position_label(unit).replace("position", "position error", 1)
+    ylabel = _error_ylabel("position", unit)
 
     import matplotlib.pyplot as plt
 

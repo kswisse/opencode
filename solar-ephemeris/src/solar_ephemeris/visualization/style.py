@@ -13,7 +13,7 @@ usable as artist kwargs without matplotlib present.
 
 from __future__ import annotations
 
-from typing import Any, Final, Mapping, Sequence
+from typing import Any, Final
 
 import numpy as np
 from numpy.typing import ArrayLike
@@ -124,15 +124,15 @@ def truthful_limits(
     ``pad`` x span so no point sits on the frame edge. No smoothing, no
     autoscale tricks - just faithful limits.
     """
-    finite = [
-        v
-        for arr in arrays
-        for v in np.asarray(arr, dtype=np.float64).ravel()
-        if np.isfinite(v)
-    ]
-    if not finite:
+    pieces = [np.asarray(arr, dtype=np.float64).ravel() for arr in arrays]
+    if pieces:
+        flat = np.concatenate(pieces)
+        finite = flat[np.isfinite(flat)]
+    else:
+        finite = np.empty(0, dtype=np.float64)
+    if finite.size == 0:
         raise ValueError("truthful_limits: no finite values to bound")
-    lo, hi = float(min(finite)), float(max(finite))
+    lo, hi = float(finite.min()), float(finite.max())
     if include_zero:
         lo, hi = min(lo, 0.0), max(hi, 0.0)
     span = hi - lo

@@ -36,26 +36,8 @@ from numpy.typing import ArrayLike
 from solar_ephemeris import __version__
 
 from .gaps import DataGapError, make_gap
+from .loader import RESULTS_DIRNAME
 from .style import STYLE_VERSION
-
-#: Figures live outside the immutable evidence tree (KTD9).
-RESULTS_DIRNAME: Final[str] = "results"
-
-#: R6 - figure-level keys every sidecar carries.
-FIGURE_KEYS: Final[tuple[str, ...]] = (
-    "figure_id",
-    "figure_data_hash",
-    "source",
-    "gaps",
-    "style_version",
-    "frame",
-    "origin",
-    "time_scale",
-    "units",
-    "software_version",
-    "matplotlib_version",
-    "generated_at",
-)
 
 #: R6 - record-level keys: top level for single-record figures, one entry
 #: per record inside sources[] for multi-record figures. Absent/null fields
@@ -105,7 +87,7 @@ def figure_data_hash(named_arrays: Mapping[str, ArrayLike]) -> str:
         a = np.ascontiguousarray(arr, dtype=np.float64)
         h.update(str(name).encode("ascii"))
         h.update(str(a.shape).encode("ascii"))
-        h.update(a.tobytes())
+        h.update(memoryview(a))
     return h.hexdigest()
 
 

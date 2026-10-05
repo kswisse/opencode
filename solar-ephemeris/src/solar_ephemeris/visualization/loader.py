@@ -159,9 +159,8 @@ def load_record(record_dir: Path) -> LoadedRecord:
         current_dir, current = target_dir, target_record
 
 
-def load_trajectory(record_dir: Path) -> Trajectory:
-    """Load the trajectory.npz belonging to record_dir's resolved record."""
-    loaded = load_record(record_dir)
+def load_trajectory_from(loaded: LoadedRecord) -> Trajectory:
+    """Load the trajectory.npz of an already-resolved record (no re-read)."""
     npz_path = loaded.resolved_dir / TRAJECTORY_FILENAME
     if not npz_path.is_file():
         raise _gap(
@@ -175,3 +174,8 @@ def load_trajectory(record_dir: Path) -> Trajectory:
         return load_trajectory_npz(npz_path)
     except (OSError, ValueError, KeyError) as exc:
         raise _gap(TRAJECTORY_FILENAME, "unreadable", str(exc), npz_path) from exc
+
+
+def load_trajectory(record_dir: Path) -> Trajectory:
+    """Load the trajectory.npz belonging to record_dir's resolved record."""
+    return load_trajectory_from(load_record(record_dir))

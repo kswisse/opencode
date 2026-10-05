@@ -127,15 +127,7 @@ def load_run(out_dir: Path) -> tuple[Trajectory, RunRecord]:
         run_timestamp_utc=raw["run_timestamp_utc"],
         trajectory_file=raw["trajectory_file"],
     )
-    with np.load(out_dir / "trajectory.npz", allow_pickle=False) as data:
-        traj = Trajectory(
-            times=data["times"],
-            positions=data["positions"],
-            velocities=data["velocities"],
-            gm=data["gm"],
-            body_names=tuple(str(n) for n in data["body_names"]),
-            meta=_traj_meta_from_json(str(data["traj_meta_json"])),
-        )
+    traj = load_trajectory_npz(out_dir / "trajectory.npz")
     return traj, record
 
 
