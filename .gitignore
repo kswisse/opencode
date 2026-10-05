@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Node
+node_modules/
+
+# Virtual envs
+venv/
+.venv/
+env/
+
+# Build output
+dist/
+.next/
+
+# Secrets
+.env
+.env.*
+
+# Logs
+*.log
+
+# Generated output
+output clip/
+
+# Private
+CV-1.docx
+
+# Tooling artifacts
+.playwright-mcp/
