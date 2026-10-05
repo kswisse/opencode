@@ -6,6 +6,13 @@ from typing import List
 
 from heat_intelligence.models.schemas import ProvenanceFlag, ZoneReading
 
+REQUIRED_COLUMNS = {
+    "timestamp", "zone_id", "zone_name", "lat", "lon",
+    "air_temperature", "humidity", "wind_speed",
+    "canopy_pct", "shade_pct", "surface_type",
+    "student_count", "exposure_hours",
+}
+
 
 def load_data(path: str) -> List[ZoneReading]:
     file_path = Path(path)
@@ -23,6 +30,11 @@ def _load_csv(file_path: Path) -> List[ZoneReading]:
     readings = []
     with open(file_path, "r") as f:
         reader = csv.DictReader(f)
+        if reader.fieldnames is None:
+            raise ValueError("CSV file is empty or has no header row")
+        missing = REQUIRED_COLUMNS - set(reader.fieldnames)
+        if missing:
+            raise ValueError(f"CSV missing required columns: {sorted(missing)}")
         for row in reader:
             reading = ZoneReading(
                 timestamp=row["timestamp"], zone_id=row["zone_id"],

@@ -1,0 +1,65 @@
+{
+  "bodies": [
+    "Sun",
+    "Earth"
+  ],
+  "configuration_hash": "516df883f91216ca869b4bed8ae8999aa863eecb6567e3f400a9d28463cb69b7",
+  "design_contract": "docs/methodology/phase5-experiment-design.md",
+  "duration": 31558148.62322297,
+  "energy_drift_per_orbit": 1.708760648068225e-12,
+  "energy_max_rel_osc": 1.7095544873538387e-12,
+  "epoch": 2451545.0,
+  "experiment_id": "B/one_period/rk4",
+  "frame_model": "active_bodies_barycentric",
+  "gates": [
+    {
+      "measured": 1.708760648068225e-12,
+      "name": "RK4 one-period run recorded (diagnostic, no drift gate)",
+      "passed": true,
+      "reason": "\u00a76b drift gate applies to Verlet; RK4 reported for comparison",
+      "threshold": "record only"
+    }
+  ],
+  "initial_condition_source": "analytic-circular",
+  "integrator": "rk4",
+  "interpretation": null,
+  "one_period_energy_max_rel_error": 1.7095544873538387e-12,
+  "output_hash": "c8908ff103356200f9d10165f70295f3985679bbabef30009d756b1bed7ca993",
+  "reference_dataset": null,
+  "reference_frame": "analytic two-body exact (rigid rotation)",
+  "reference_origin": "barycenter(Sun, Earth)",
+  "reproducible": true,
+  "run_record": {
+    "config": {
+      "bodies": [
+        "Sun",
+        "Earth"
+      ],
+      "dt": 31558.14862322297,
+      "duration": 31558148.62322297,
+      "epoch_jd": 2451545.0,
+      "frame": "active_bodies_barycentric",
+      "guard_m": 1.0,
+      "integrator": "rk4",
+      "random_seed_if_any": null,
+      "reference_dataset": null,
+      "time_scale": "TDB"
+    },
+    "config_hash": "516df883f91216ca869b4bed8ae8999aa863eecb6567e3f400a9d28463cb69b7",
+    "run_timestamp_utc": "2026-10-03T09:10:53.275675+00:00",
+    "schema_version": 1,
+    "software_version": "0.1.0",
+    "trajectory_file": "trajectory.npz"
+  },
+  "runtime_s": [
+    0.1464589000097476,
+    0.14392750000115484
+  ],
+  "sample_grid": "times = step * dt (no accumulation)",
+  "schema_version": 1,
+  "second_output_hash": "c8908ff103356200f9d10165f70295f3985679bbabef30009d756b1bed7ca993",
+  "software_version": "0.1.0",
+  "time_scale": "TDB",
+  "timestep": 31558.14862322297,
+  "units": "m, m/s, s"
+}

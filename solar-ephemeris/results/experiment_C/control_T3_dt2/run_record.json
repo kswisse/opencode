@@ -1,0 +1,26 @@
+{
+  "config": {
+    "bodies": [
+      "Sun",
+      "Mercury",
+      "Venus",
+      "Earth",
+      "Moon",
+      "Mars"
+    ],
+    "dt": 1180.2957552,
+    "duration": 2592000.0,
+    "epoch_jd": 2451545.0,
+    "frame": "active_bodies_barycentric",
+    "guard_m": 1.0,
+    "integrator": "rk4",
+    "random_seed_if_any": null,
+    "reference_dataset": "JPL DE440 (de440s.bsp live)",
+    "time_scale": "TDB"
+  },
+  "config_hash": "fc6752b5966a595f1e9d0f9bbe590d3204356b7dbbe6f6967a2ebab869fd6e79",
+  "run_timestamp_utc": "2026-10-03T09:16:53.746321+00:00",
+  "schema_version": 1,
+  "software_version": "0.1.0",
+  "trajectory_file": "trajectory.npz"
+}

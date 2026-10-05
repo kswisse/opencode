@@ -1,0 +1,22 @@
+{
+  "config": {
+    "bodies": [
+      "Sun",
+      "Earth"
+    ],
+    "dt": 63116.2995270912,
+    "duration": 604800.0,
+    "epoch_jd": 2451545.0,
+    "frame": "active_bodies_barycentric",
+    "guard_m": 1.0,
+    "integrator": "rk4",
+    "random_seed_if_any": null,
+    "reference_dataset": "JPL DE440 (de440s.bsp live)",
+    "time_scale": "TDB"
+  },
+  "config_hash": "0d97aff99047d8fc1b58f36954f135590bb6cc3e8387737987dc6214b328f789",
+  "run_timestamp_utc": "2026-10-03T09:11:29.307136+00:00",
+  "schema_version": 1,
+  "software_version": "0.1.0",
+  "trajectory_file": "trajectory.npz"
+}

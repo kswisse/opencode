@@ -1,0 +1,61 @@
+{
+  "all_passed": true,
+  "errors_m": [
+    41589.05820773068,
+    2491.0223407807243,
+    152.2324585307381,
+    9.405220551024248
+  ],
+  "experiment_id": "A1/rk4/orders",
+  "gates": [
+    {
+      "measured": [
+        41589.05820773068,
+        2491.0223407807243,
+        152.2324585307381,
+        9.405220551024248
+      ],
+      "name": "errors strictly decrease along the frozen grid",
+      "passed": true,
+      "reason": "\u00a76a.1: strict decrease on the pre-registered grid",
+      "threshold": "errors[k+1] < errors[k] for all k"
+    },
+    {
+      "measured": [
+        4.061394149658834,
+        4.032390056778234,
+        4.0166704132287805
+      ],
+      "name": "observed order within window (3.5, 4.5)",
+      "passed": true,
+      "reason": "\u00a76a.2: order theory (RK4 4th / Verlet 2nd), accepted Phase-1 measured [4.02,4.06]/[2.00,2.00]",
+      "threshold": [
+        3.5,
+        4.5
+      ]
+    },
+    {
+      "measured": 9.405220551024248,
+      "name": "final error above 1000x roundoff floor",
+      "passed": true,
+      "reason": "\u00a76a.3 / R-S6: estimation above the frozen floor",
+      "threshold": 0.033306690738754696
+    }
+  ],
+  "n_values": [
+    25,
+    50,
+    100,
+    200
+  ],
+  "observed_orders": [
+    4.061394149658834,
+    4.032390056778234,
+    4.0166704132287805
+  ],
+  "order_window": [
+    3.5,
+    4.5
+  ],
+  "roundoff_floor_m": 3.3306690738754696e-05
+}

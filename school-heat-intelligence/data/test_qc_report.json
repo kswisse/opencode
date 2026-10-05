@@ -1,0 +1,16 @@
+{
+  "total_rows": 100,
+  "missing_values": {
+    "temp": 2
+  },
+  "duplicate_timestamps": [
+    [
+      "2026-10-05T07:00:00",
+      "zone_01"
+    ]
+  ],
+  "invalid_ranges": {},
+  "missing_zones": [],
+  "temporal_gaps": [],
+  "overall_pass": false
+}

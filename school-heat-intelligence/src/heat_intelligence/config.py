@@ -56,5 +56,6 @@ def load_config(path: str = "config.yaml") -> HeatIntelligenceConfig:
     if config_path.exists():
         with open(config_path, "r") as f:
             data = yaml.safe_load(f)
-        return HeatIntelligenceConfig(**data)
+        if data is not None:
+            return HeatIntelligenceConfig(**data)
     return HeatIntelligenceConfig()

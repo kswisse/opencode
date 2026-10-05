@@ -1,0 +1,6 @@
+rank,zone_id,zone_name,exposure_score,risk_score,student_count,exposure_hours
+1,zone_01,Playground,35.6,78.7,0,2.0
+2,zone_04,Sports Field,34.4,58.5,45,1.5
+3,zone_05,Canteen,27.9,64.5,0,1.0
+4,zone_03,Courtyard,27.0,62.3,0,1.0
+5,zone_02,Garden,20.9,49.7,0,0.5

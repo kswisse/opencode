@@ -68,18 +68,22 @@ from src.api.deps import get_current_user
 
 @pytest.mark.asyncio
 async def test_get_current_user_valid():
+    from unittest.mock import MagicMock
     token = create_access_token("user1", "company1", "admin")
     creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials=token)
-    result = await get_current_user(creds)
+    mock_request = MagicMock()
+    result = await get_current_user(mock_request, creds)
     assert result.user_id == "user1"
     assert result.company_id == "company1"
     assert result.role == "admin"
 
 @pytest.mark.asyncio
 async def test_get_current_user_invalid():
+    from unittest.mock import MagicMock
     creds = HTTPAuthorizationCredentials(scheme="Bearer", credentials="invalid.token")
+    mock_request = MagicMock()
     with pytest.raises(HTTPException) as exc_info:
-        await get_current_user(creds)
+        await get_current_user(mock_request, creds)
     assert exc_info.value.status_code == 401
 
 import pytest

@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "solar-ephemeris"
+version = "0.1.0"
+description = "Independent Newtonian N-body Solar System ephemeris engine"
+requires-python = ">=3.12"
+dependencies = ["numpy>=2.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+# Live SPICE access (Phase 4, ephemeris/spice_backend.py ONLY). Core physics
+# runs without it — the default test suite is kernel-free by design.
+spice = ["spiceypy>=8,<9"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+# Phase 4 default-selection policy (user-approved): tests marked real_kernel
+# require an installed DE440 kernel + spiceypy, so they are DESELECTED in the
+# default run (pytest reports them as "N deselected" — visible, never hidden
+# as skips). Plain `python -m pytest tests -q` therefore stays green on any
+# machine. The mandatory real-kernel gate overrides this on the command line:
+#     python -m pytest tests -m real_kernel -q
+addopts = "-m 'not real_kernel'"
+markers = [
+    "real_kernel: requires an installed de440s.bsp kernel and spiceypy (Phase 4 Gate B)",
+]

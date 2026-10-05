@@ -1,0 +1,76 @@
+{
+  "angmom_rel_dev_max": 3.634458581667595e-16,
+  "bodies": [
+    "Sun",
+    "Earth"
+  ],
+  "configuration_hash": "91fb4b785a889ec88175866b82d9a3947912225d12acf12d5053128c52699acf",
+  "design_contract": "docs/methodology/phase5-experiment-design.md",
+  "duration": 7889537.155805742,
+  "endpoint_error_m": 148224750.24180633,
+  "energy_drift_per_orbit": 8.087019391367959e-06,
+  "energy_max_rel_osc": 1.9452623355717427e-06,
+  "epoch": 2451545.0,
+  "experiment_id": "A1/verlet/n=25",
+  "frame_model": "active_bodies_barycentric",
+  "gates": [
+    {
+      "measured": 148224750.24180633,
+      "name": "A1 error above 1000x roundoff floor",
+      "passed": true,
+      "reason": "\u00a76a.3: floor REUSED from Phase 1-2 policy (1.5e11 * 2^-52 = 3.331e-05 m); never fitted",
+      "threshold": 0.033306690738754696
+    },
+    {
+      "measured": "equal",
+      "name": "reproducible (2 runs bitwise + equal output_hash)",
+      "passed": true,
+      "reason": "\u00a76d: every standard config runs twice",
+      "threshold": "np.array_equal + equal hashes"
+    }
+  ],
+  "horizon_periods": 0.25,
+  "horizon_s": 7889537.155805742,
+  "initial_condition_source": "analytic-circular",
+  "integrator": "verlet",
+  "interpretation": null,
+  "interpretation_note": "A1: pure integration error against the analytic solution (design \u00a74 group A) \u2014 the only experiment allowed to call its number 'numerical error'.",
+  "output_hash": "c7674f9f07748e9e60fbab137003018406d52bf6aa53b1e876e0762c3e620d36",
+  "reference_dataset": null,
+  "reference_frame": "analytic two-body exact (rigid rotation)",
+  "reference_origin": "barycenter(Sun, Earth)",
+  "reproducible": true,
+  "run_record": {
+    "config": {
+      "bodies": [
+        "Sun",
+        "Earth"
+      ],
+      "dt": 315581.4862322297,
+      "duration": 7889537.155805742,
+      "epoch_jd": 2451545.0,
+      "frame": "active_bodies_barycentric",
+      "guard_m": 1.0,
+      "integrator": "verlet",
+      "random_seed_if_any": null,
+      "reference_dataset": null,
+      "time_scale": "TDB"
+    },
+    "config_hash": "91fb4b785a889ec88175866b82d9a3947912225d12acf12d5053128c52699acf",
+    "run_timestamp_utc": "2026-10-03T09:10:52.851727+00:00",
+    "schema_version": 1,
+    "software_version": "0.1.0",
+    "trajectory_file": "trajectory.npz"
+  },
+  "runtime_s": [
+    0.004961500002536923,
+    0.0020311999833211303
+  ],
+  "sample_grid": "times = step * dt (no accumulation)",
+  "schema_version": 1,
+  "second_output_hash": "c7674f9f07748e9e60fbab137003018406d52bf6aa53b1e876e0762c3e620d36",
+  "software_version": "0.1.0",
+  "time_scale": "TDB",
+  "timestep": 315581.4862322297,
+  "units": "m, m/s, s"
+}

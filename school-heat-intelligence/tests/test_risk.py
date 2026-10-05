@@ -3,7 +3,7 @@ import pytest
 from datetime import datetime
 from heat_intelligence.config import HeatIntelligenceConfig
 from heat_intelligence.risk.heat_index import compute_heat_index
-from heat_intelligence.risk.engine import compute_risk_score, normalize_risk_label
+from heat_intelligence.risk.engine import compute_risk_score, normalize, normalize_risk_label
 from heat_intelligence.models.schemas import ZoneReading, ProvenanceFlag
 
 
@@ -105,3 +105,31 @@ class TestRiskLabel:
         assert normalize_risk_label(75) == "High"
         assert normalize_risk_label(76) == "Extreme"
         assert normalize_risk_label(100) == "Extreme"
+
+
+class TestNormalize:
+    def test_normalize_midpoint(self):
+        assert normalize(5.0, 0.0, 10.0) == pytest.approx(0.5)
+
+    def test_normalize_below_min(self):
+        assert normalize(-5.0, 0.0, 10.0) == 0.0
+
+    def test_normalize_above_max(self):
+        assert normalize(15.0, 0.0, 10.0) == 1.0
+
+    def test_normalize_at_bounds(self):
+        assert normalize(0.0, 0.0, 10.0) == 0.0
+        assert normalize(10.0, 0.0, 10.0) == 1.0
+
+    def test_normalize_inverted(self):
+        assert normalize(0.0, 0.0, 10.0, invert=True) == 1.0
+        assert normalize(10.0, 0.0, 10.0, invert=True) == 0.0
+        assert normalize(5.0, 0.0, 10.0, invert=True) == pytest.approx(0.5)
+
+    def test_normalize_equal_min_max(self):
+        assert normalize(5.0, 5.0, 5.0) == 0.5
+
+    def test_normalize_negative_range(self):
+        assert normalize(-3.0, -10.0, 0.0) == pytest.approx(0.7)
+        assert normalize(-10.0, -10.0, 0.0) == 0.0
+        assert normalize(0.0, -10.0, 0.0) == 1.0

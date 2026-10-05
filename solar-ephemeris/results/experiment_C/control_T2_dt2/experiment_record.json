@@ -1,0 +1,350 @@
+{
+  "bodies": [
+    "Sun",
+    "Earth",
+    "Moon"
+  ],
+  "comparison": {
+    "Earth": {
+      "body": "Earth",
+      "epoch_jd": 2451545.0,
+      "model_metadata": {
+        "axis_note": "right-handed inertial; axis alignment arbitrary in Phase 1-2 (ICRF from Phase 4)",
+        "body_names": [
+          "Sun",
+          "Earth",
+          "Moon"
+        ],
+        "config_hash": "6ff48071e77182b738850c91f87fc939cb30474e09d84a90b69fbd09aee5adff",
+        "dt": 1180.2957552,
+        "epoch_jd": 2451545.0,
+        "frame": "active_bodies_barycentric",
+        "ic_source": "reference-ingested via ephemeris/ic.py (live de440s.bsp)",
+        "integrator": "rk4",
+        "integrator_order": 4,
+        "length_unit": "m",
+        "n_bodies": 3,
+        "n_steps": 2196,
+        "origin": "barycenter(Sun, Earth, Moon)",
+        "sample_every": 200,
+        "software_version": "0.1.0",
+        "time_scale": "TDB",
+        "velocity_unit": "m/s"
+      },
+      "position_error": [
+        0.0,
+        2350.6512762650773,
+        9257.923769601464,
+        20500.260810140815,
+        35855.23006889672,
+        55104.20497382858,
+        78035.58010783215,
+        104452.11409303293,
+        134184.55967089758,
+        167099.11560408698,
+        203096.43864526163
+      ],
+      "position_stats": {
+        "max": 203096.43864526163,
+        "mean": 73630.55263816765,
+        "median": 55104.20497382858,
+        "n_samples": 11,
+        "percentiles": {
+          "p95": 185097.7771246743
+        }
+      },
+      "reference_metadata": {
+        "body_ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          199,
+          299,
+          301,
+          399
+        ],
+        "kernel_coverage": {
+          "intervals": [
+            [
+              -4734072000.0,
+              4735368000.0
+            ]
+          ]
+        },
+        "kernel_filename": "de440s.bsp",
+        "kernel_md5": "3917ee56769db332790c751e2168843d",
+        "kernel_sha256": "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2",
+        "native_position_unit": "km",
+        "native_velocity_unit": "km/s",
+        "reference_center": 0,
+        "reference_frame": "J2000",
+        "reference_name": "JPL DE440",
+        "reference_version": "DE440, integrated 2020-06-25 (JPL de440_tech-comments.txt)",
+        "retrieval_date": "2026-10-03",
+        "size_bytes": 32726016,
+        "software_version": "0.1.0",
+        "source": "NAIF generic SPK kernels (https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/); Park et al. (2021), AJ 161:105, DOI 10.3847/1538-3881/abd414; live query via spiceypy (ephemeris/spice_backend.py)",
+        "spice_version": "8.2.0",
+        "time_standard": "TDB \u2014 SPICE ephemeris time, s past J2000 TDB"
+      },
+      "relative_position_error": [
+        0.0,
+        1.5979665737974584e-08,
+        6.293346005167815e-08,
+        1.393487624526224e-07,
+        2.43701793705719e-07,
+        3.7448870874101633e-07,
+        5.302458986389221e-07,
+        7.095986851976097e-07,
+        9.113557855246715e-07,
+        1.1345650998972415e-06,
+        1.3785103581878193e-06
+      ],
+      "schema_version": 1,
+      "times_s": [
+        0.0,
+        236059.15104,
+        472118.30208,
+        708177.45312,
+        944236.60416,
+        1180295.7552,
+        1416354.90624,
+        1652414.05728,
+        1888473.20832,
+        2124532.35936,
+        2360591.5104
+      ],
+      "transform": "translation SSB(0) -> barycenter(Sun, Earth, Moon) by GM-weighted barycentre of (Sun, Earth, Moon); no rotation; origin offset at et0=0s: [-1.068e+09 -3.956e+08 -1.379e+08] m",
+      "velocity_error": [
+        0.0,
+        0.019764220512021397,
+        0.038601606581462576,
+        0.056496743241114714,
+        0.07346017427554304,
+        0.0895182496833764,
+        0.10471649410717009,
+        0.11915149192545482,
+        0.13297707019686508,
+        0.14635198424128243,
+        0.1594353465254293
+      ],
+      "velocity_stats": {
+        "max": 0.1594353465254293,
+        "mean": 0.08549758011724724,
+        "median": 0.0895182496833764,
+        "n_samples": 11,
+        "percentiles": {
+          "p95": 0.15289366538335586
+        }
+      }
+    },
+    "Moon": {
+      "body": "Moon",
+      "epoch_jd": 2451545.0,
+      "model_metadata": {
+        "axis_note": "right-handed inertial; axis alignment arbitrary in Phase 1-2 (ICRF from Phase 4)",
+        "body_names": [
+          "Sun",
+          "Earth",
+          "Moon"
+        ],
+        "config_hash": "6ff48071e77182b738850c91f87fc939cb30474e09d84a90b69fbd09aee5adff",
+        "dt": 1180.2957552,
+        "epoch_jd": 2451545.0,
+        "frame": "active_bodies_barycentric",
+        "ic_source": "reference-ingested via ephemeris/ic.py (live de440s.bsp)",
+        "integrator": "rk4",
+        "integrator_order": 4,
+        "length_unit": "m",
+        "n_bodies": 3,
+        "n_steps": 2196,
+        "origin": "barycenter(Sun, Earth, Moon)",
+        "sample_every": 200,
+        "software_version": "0.1.0",
+        "time_scale": "TDB",
+        "velocity_unit": "m/s"
+      },
+      "position_error": [
+        0.0,
+        2346.716615799327,
+        9228.727235678902,
+        20381.53876535561,
+        35482.374237278724,
+        54278.67663846132,
+        76841.3254703189,
+        103466.07839995362,
+        134039.3883944095,
+        167927.95138520648,
+        204565.5404949742
+      ],
+      "position_stats": {
+        "max": 204565.5404949742,
+        "mean": 73505.30160340332,
+        "median": 54278.67663846132,
+        "n_samples": 11,
+        "percentiles": {
+          "p95": 186246.74594009033
+        }
+      },
+      "reference_metadata": {
+        "body_ids": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          199,
+          299,
+          301,
+          399
+        ],
+        "kernel_coverage": {
+          "intervals": [
+            [
+              -4734072000.0,
+              4735368000.0
+            ]
+          ]
+        },
+        "kernel_filename": "de440s.bsp",
+        "kernel_md5": "3917ee56769db332790c751e2168843d",
+        "kernel_sha256": "c1c7feeab882263fc493a9d5a5b2ddd71b54826cdf65d8d17a76126b260a49f2",
+        "native_position_unit": "km",
+        "native_velocity_unit": "km/s",
+        "reference_center": 0,
+        "reference_frame": "J2000",
+        "reference_name": "JPL DE440",
+        "reference_version": "DE440, integrated 2020-06-25 (JPL de440_tech-comments.txt)",
+        "retrieval_date": "2026-10-03",
+        "size_bytes": 32726016,
+        "software_version": "0.1.0",
+        "source": "NAIF generic SPK kernels (https://naif.jpl.nasa.gov/pub/naif/generic_kernels/spk/planets/); Park et al. (2021), AJ 161:105, DOI 10.3847/1538-3881/abd414; live query via spiceypy (ephemeris/spice_backend.py)",
+        "spice_version": "8.2.0",
+        "time_standard": "TDB \u2014 SPICE ephemeris time, s past J2000 TDB"
+      },
+      "relative_position_error": [
+        0.0,
+        1.5992050156823043e-08,
+        6.290773492014817e-08,
+        1.3885880725700004e-07,
+        2.414464750823465e-07,
+        3.6875435589597376e-07,
+        5.212411698000122e-07,
+        7.012029700123078e-07,
+        9.083865085440607e-07,
+        1.1388835143982117e-06,
+        1.3888350656586176e-06
+      ],
+      "schema_version": 1,
+      "times_s": [
+        0.0,
+        236059.15104,
+        472118.30208,
+        708177.45312,
+        944236.60416,
+        1180295.7552,
+        1416354.90624,
+        1652414.05728,
+        1888473.20832,
+        2124532.35936,
+        2360591.5104
+      ],
+      "transform": "translation SSB(0) -> barycenter(Sun, Earth, Moon) by GM-weighted barycentre of (Sun, Earth, Moon); no rotation; origin offset at et0=0s: [-1.068e+09 -3.956e+08 -1.379e+08] m",
+      "velocity_error": [
+        0.0,
+        0.019716478075193885,
+        0.03840975854904431,
+        0.05584945290342289,
+        0.07191298324619687,
+        0.08749353785511961,
+        0.10421322193067312,
+        0.12168607051519052,
+        0.13717854443970479,
+        0.14980112380346405,
+        0.16078859404461315
+      ],
+      "velocity_stats": {
+        "max": 0.16078859404461315,
+        "mean": 0.08609543321478394,
+        "median": 0.08749353785511961,
+        "n_samples": 11,
+        "percentiles": {
+          "p95": 0.1552948589240386
+        }
+      }
+    }
+  },
+  "configuration_hash": "6ff48071e77182b738850c91f87fc939cb30474e09d84a90b69fbd09aee5adff",
+  "control_purpose": "registered dt/2 control \u2014 sample times match the main grid exactly (steps 200k of dt/2 = steps 100k of dt) so trajectory_difference applies directly (\u00a73.1 row C)",
+  "design_contract": "docs/methodology/phase5-experiment-design.md",
+  "dt": 1180.2957552,
+  "duration": 2592000.0,
+  "epoch": 2451545.0,
+  "experiment_id": "C/control/T2@dt/2",
+  "frame_model": "active_bodies_barycentric",
+  "gates": [
+    {
+      "measured": "equal",
+      "name": "reproducible (2 runs bitwise + equal output_hash)",
+      "passed": true,
+      "reason": "\u00a76d",
+      "threshold": "np.array_equal + equal hashes"
+    }
+  ],
+  "initial_condition_source": "reference-ingested via ephemeris/ic.py (live de440s.bsp)",
+  "integrator": "rk4",
+  "interpretation": null,
+  "output_hash": "52e17d34a494b24bb75ab6dbece61d137727b855042d6eb93497ac440bd826ee",
+  "reference_dataset": "JPL DE440 (de440s.bsp live)",
+  "reference_frame": "J2000",
+  "reference_origin": "SSB(0)",
+  "reproducible": true,
+  "run_record": {
+    "config": {
+      "bodies": [
+        "Sun",
+        "Earth",
+        "Moon"
+      ],
+      "dt": 1180.2957552,
+      "duration": 2592000.0,
+      "epoch_jd": 2451545.0,
+      "frame": "active_bodies_barycentric",
+      "guard_m": 1.0,
+      "integrator": "rk4",
+      "random_seed_if_any": null,
+      "reference_dataset": "JPL DE440 (de440s.bsp live)",
+      "time_scale": "TDB"
+    },
+    "config_hash": "6ff48071e77182b738850c91f87fc939cb30474e09d84a90b69fbd09aee5adff",
+    "run_timestamp_utc": "2026-10-03T09:16:53.103441+00:00",
+    "schema_version": 1,
+    "software_version": "0.1.0",
+    "trajectory_file": "trajectory.npz"
+  },
+  "runtime_s": [
+    0.3285257000243291,
+    0.32123209995916113
+  ],
+  "sample_every": 200,
+  "sample_grid": "times = step * dt (no accumulation)",
+  "schema_version": 1,
+  "second_output_hash": "52e17d34a494b24bb75ab6dbece61d137727b855042d6eb93497ac440bd826ee",
+  "software_version": "0.1.0",
+  "tier": "T2",
+  "time_scale": "TDB",
+  "timestep": 1180.2957552,
+  "units": "m, m/s, s"
+}

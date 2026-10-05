@@ -1,0 +1,6 @@
+zone_id,zone_name,mean,std,min,max,count
+zone_01,Playground,33.53,3.01,27.1,40.1,100
+zone_02,Garden,29.25,3.01,22.4,35.9,100
+zone_03,Courtyard,31.03,3.06,24.2,37.5,100
+zone_04,Sports Field,30.86,3.02,24.2,37.4,100
+zone_05,Canteen,30.48,3.02,23.5,37.0,100

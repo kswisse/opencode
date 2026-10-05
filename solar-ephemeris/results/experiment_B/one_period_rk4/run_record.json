@@ -1,0 +1,22 @@
+{
+  "config": {
+    "bodies": [
+      "Sun",
+      "Earth"
+    ],
+    "dt": 31558.14862322297,
+    "duration": 31558148.62322297,
+    "epoch_jd": 2451545.0,
+    "frame": "active_bodies_barycentric",
+    "guard_m": 1.0,
+    "integrator": "rk4",
+    "random_seed_if_any": null,
+    "reference_dataset": null,
+    "time_scale": "TDB"
+  },
+  "config_hash": "516df883f91216ca869b4bed8ae8999aa863eecb6567e3f400a9d28463cb69b7",
+  "run_timestamp_utc": "2026-10-03T09:10:53.275675+00:00",
+  "schema_version": 1,
+  "software_version": "0.1.0",
+  "trajectory_file": "trajectory.npz"
+}

@@ -1,0 +1,23 @@
+{
+  "config": {
+    "bodies": [
+      "Sun",
+      "Earth",
+      "Moon"
+    ],
+    "dt": 2360.5915104,
+    "duration": 31536000.0,
+    "epoch_jd": 2451545.0,
+    "frame": "active_bodies_barycentric",
+    "guard_m": 1.0,
+    "integrator": "rk4",
+    "random_seed_if_any": null,
+    "reference_dataset": "JPL DE440 (de440s.bsp live)",
+    "time_scale": "TDB"
+  },
+  "config_hash": "ab5823140e35e26bd85320a8ca2b80227a5282c87827e3adf95befa0cdf3070e",
+  "run_timestamp_utc": "2026-10-03T09:32:56.869580+00:00",
+  "schema_version": 1,
+  "software_version": "0.1.0",
+  "trajectory_file": "trajectory.npz"
+}

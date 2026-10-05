@@ -1,0 +1,179 @@
+{
+  "a1": {
+    "rk4": {
+      "all_passed": true,
+      "errors_m": [
+        41589.05820773068,
+        2491.0223407807243,
+        152.2324585307381,
+        9.405220551024248
+      ],
+      "experiment_id": "A1/rk4/orders",
+      "gates": [
+        {
+          "measured": [
+            41589.05820773068,
+            2491.0223407807243,
+            152.2324585307381,
+            9.405220551024248
+          ],
+          "name": "errors strictly decrease along the frozen grid",
+          "passed": true,
+          "reason": "\u00a76a.1: strict decrease on the pre-registered grid",
+          "threshold": "errors[k+1] < errors[k] for all k"
+        },
+        {
+          "measured": [
+            4.061394149658834,
+            4.032390056778234,
+            4.0166704132287805
+          ],
+          "name": "observed order within window (3.5, 4.5)",
+          "passed": true,
+          "reason": "\u00a76a.2: order theory (RK4 4th / Verlet 2nd), accepted Phase-1 measured [4.02,4.06]/[2.00,2.00]",
+          "threshold": [
+            3.5,
+            4.5
+          ]
+        },
+        {
+          "measured": 9.405220551024248,
+          "name": "final error above 1000x roundoff floor",
+          "passed": true,
+          "reason": "\u00a76a.3 / R-S6: estimation above the frozen floor",
+          "threshold": 0.033306690738754696
+        }
+      ],
+      "n_values": [
+        25,
+        50,
+        100,
+        200
+      ],
+      "observed_orders": [
+        4.061394149658834,
+        4.032390056778234,
+        4.0166704132287805
+      ],
+      "order_window": [
+        3.5,
+        4.5
+      ],
+      "roundoff_floor_m": 3.3306690738754696e-05
+    },
+    "verlet": {
+      "all_passed": true,
+      "errors_m": [
+        148224750.24180633,
+        37070860.03586955,
+        9268635.243786829,
+        2317216.375621434
+      ],
+      "experiment_id": "A1/verlet/orders",
+      "gates": [
+        {
+          "measured": [
+            148224750.24180633,
+            37070860.03586955,
+            9268635.243786829,
+            2317216.375621434
+          ],
+          "name": "errors strictly decrease along the frozen grid",
+          "passed": true,
+          "reason": "\u00a76a.1: strict decrease on the pre-registered grid",
+          "threshold": "errors[k+1] < errors[k] for all k"
+        },
+        {
+          "measured": [
+            1.9994288749252556,
+            1.9998567551655588,
+            1.999964159884593
+          ],
+          "name": "observed order within window (1.5, 2.5)",
+          "passed": true,
+          "reason": "\u00a76a.2: order theory (RK4 4th / Verlet 2nd), accepted Phase-1 measured [4.02,4.06]/[2.00,2.00]",
+          "threshold": [
+            1.5,
+            2.5
+          ]
+        },
+        {
+          "measured": 2317216.375621434,
+          "name": "final error above 1000x roundoff floor",
+          "passed": true,
+          "reason": "\u00a76a.3 / R-S6: estimation above the frozen floor",
+          "threshold": 0.033306690738754696
+        }
+      ],
+      "n_values": [
+        25,
+        50,
+        100,
+        200
+      ],
+      "observed_orders": [
+        1.9994288749252556,
+        1.9998567551655588,
+        1.999964159884593
+      ],
+      "order_window": [
+        1.5,
+        2.5
+      ],
+      "roundoff_floor_m": 3.3306690738754696e-05
+    }
+  },
+  "a2_floor_ratio_rule": 2.0,
+  "b_one_period": {
+    "rk4": {
+      "energy_drift_per_orbit": 1.708760648068225e-12,
+      "energy_max_rel_osc": 1.7095544873538387e-12,
+      "gates": [
+        {
+          "measured": 1.708760648068225e-12,
+          "name": "RK4 one-period run recorded (diagnostic, no drift gate)",
+          "passed": true,
+          "reason": "\u00a76b drift gate applies to Verlet; RK4 reported for comparison",
+          "threshold": "record only"
+        }
+      ]
+    },
+    "verlet": {
+      "energy_drift_per_orbit": 1.2249821980209338e-16,
+      "energy_max_rel_osc": 3.8961521463073895e-10,
+      "gates": [
+        {
+          "measured": 1.2249821980209338e-16,
+          "name": "Verlet energy drift over one P below Phase-3 bound",
+          "passed": true,
+          "reason": "\u00a76b: accepted Phase-3 slope bound (measured 2.8e-16); drift = OLS slope of E(t)/|E0| x P",
+          "threshold": 1e-12
+        }
+      ]
+    }
+  },
+  "c_signal_factor": 10.0,
+  "design_contract": "docs\\methodology\\phase5-experiment-design.md",
+  "e_conervation_gates": {
+    "angmom_rel_max": 1e-08,
+    "energy_rel_max": 1e-06,
+    "momentum_rel_max": 1e-10
+  },
+  "experiment_id": "baseline/frozen",
+  "floor_safety_factor": 1000.0,
+  "frozen_at": "2026-10-03T16:11:27+0700",
+  "order_windows": {
+    "rk4": [
+      3.5,
+      4.5
+    ],
+    "verlet": [
+      1.5,
+      2.5
+    ]
+  },
+  "roundoff_floor_formula": "1.5e11 * 2^-52 (Phase 1-2 contract, reuse only)",
+  "roundoff_floor_m": 3.3306690738754696e-05,
+  "source": "design \u00a711 step 4 (freeze numerical baseline) \u2014 values BELOW are frozen before A2/E/C/D judging",
+  "verlet_drift_max_per_period": 1e-12
+}

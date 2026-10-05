@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     jwt_secret_key: str  # No default - must be set via JWT_SECRET_KEY env var
     jwt_algorithm: str = "HS256"
     jwt_expiry_minutes: int = 60
+    environment: str = "development"  # development | testing | production
+    otlp_endpoint: str = "http://localhost:4317"
+    service_name: str = "ai-workforce-platform"
 
 
 settings = Settings()

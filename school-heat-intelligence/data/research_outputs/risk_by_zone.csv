@@ -1,0 +1,6 @@
+zone_id,zone_name,risk_score,risk_label,temperature,surface_type,canopy_pct
+zone_01,Playground,78.7,Extreme,30.9,asphalt,10.0
+zone_02,Garden,49.7,Moderate,26.4,grass,60.0
+zone_03,Courtyard,62.3,High,28.4,concrete,25.0
+zone_04,Sports Field,58.5,High,28.1,grass,5.0
+zone_05,Canteen,64.5,High,28.1,concrete,45.0

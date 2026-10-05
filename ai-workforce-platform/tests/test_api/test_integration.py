@@ -15,7 +15,9 @@ def get_auth_header():
 async def test_health(client):
     response = await client.get("/health")
     assert response.status_code == 200
-    assert response.json() == {"status": "ok"}
+    data = response.json()
+    assert data["status"] == "healthy"
+    assert "timestamp" in data
 
 
 @pytest.mark.asyncio

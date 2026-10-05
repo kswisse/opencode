@@ -8,10 +8,6 @@ def render_provenance_badge(provenance: ProvenanceFlag):
               ProvenanceFlag.SIMULATED: "🔴"}
     st.caption(f"{colors.get(provenance, '⚪')} Data provenance: **{provenance.value}**")
 
-def render_risk_gauge(score: float, label: str):
-    color = {"Low": "green", "Moderate": "orange", "High": "red", "Extreme": "darkred"}
-    st.metric(label=f"Risk: {label}", value=f"{score:.1f}/100")
-
 def render_methodology_warning():
     st.warning(
         "**Mô phỏng mô hình — chưa được kiểm chứng thực địa.**\n\n"

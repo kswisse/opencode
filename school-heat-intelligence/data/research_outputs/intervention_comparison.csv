@@ -1,0 +1,6 @@
+zone_id,zone_name,baseline_risk,simulated_risk,relative_change_pct
+zone_01,Main Playground,78.7,78.7,0.0
+zone_02,School Garden,49.7,49.7,0.0
+zone_03,Courtyard,62.3,62.3,0.0
+zone_04,Sports Field,58.5,58.5,0.0
+zone_05,Canteen Area,64.5,64.5,0.0

@@ -21,6 +21,7 @@ class Project(Base):
 
     company: Mapped["Company"] = relationship(back_populates="projects")
     tasks: Mapped[list["Task"]] = relationship(back_populates="project")
+    background_jobs: Mapped[list["BackgroundJob"]] = relationship(back_populates="project")
 
 
 class Task(Base):

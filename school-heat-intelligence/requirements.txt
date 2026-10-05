@@ -1,0 +1,9 @@
+streamlit>=1.30.0
+pandas>=2.1.0
+numpy>=1.26.0
+pydantic>=2.5.0
+folium>=0.15.0
+streamlit-folium>=0.15.0
+plotly>=5.18.0
+pyyaml>=6.0
+matplotlib>=3.7.0

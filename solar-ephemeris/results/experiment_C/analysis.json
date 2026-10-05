@@ -1,0 +1,105 @@
+{
+  "all_resolved": true,
+  "conclusion": "all adjacent-tier signals exceed 10x the registered halving control",
+  "control_assignment_rule": "signal(T_a <-> T_b) judged against the control of the UPPER tier T_b; T3<->T4 borrowing T3 is pre-registered explicitly, T1<->T2 and T2<->T3 follow the same rule (recorded here before judging).",
+  "criterion": "signal >= 10.0 x control (frozen \u00a73.1 row C)",
+  "experiment_id": "C/analysis",
+  "signals": [
+    {
+      "common_bodies": [
+        "Sun",
+        "Earth"
+      ],
+      "metrics": [
+        {
+          "control_m": 0.0012848453102093065,
+          "control_tier": "T2",
+          "metric": "max|\u0394Earth| between tiers (m)",
+          "resolved": true,
+          "signal_m": 30435360.613259647,
+          "threshold_factor": 10.0
+        },
+        {
+          "control_m": 3.6885278065167638e-09,
+          "control_tier": "T2",
+          "metric": "max|\u0394barycentre['Sun', 'Earth']| (m)",
+          "resolved": true,
+          "signal_m": 5451.215352033849,
+          "threshold_factor": 10.0
+        }
+      ],
+      "pair": "T1<->T2"
+    },
+    {
+      "common_bodies": [
+        "Sun",
+        "Earth",
+        "Moon"
+      ],
+      "metrics": [
+        {
+          "control_m": 0.0011194430453605221,
+          "control_tier": "T3",
+          "metric": "max|\u0394Earth| between tiers (m)",
+          "resolved": true,
+          "signal_m": 247265.90194608382,
+          "threshold_factor": 10.0
+        },
+        {
+          "control_m": 0.09386909018797532,
+          "control_tier": "T3",
+          "metric": "max|\u0394Moon| between tiers (m)",
+          "resolved": true,
+          "signal_m": 247263.2133797998,
+          "threshold_factor": 10.0
+        },
+        {
+          "control_m": 2.25222328915043e-09,
+          "control_tier": "T3",
+          "metric": "max|\u0394barycentre['Sun', 'Earth', 'Moon']| (m)",
+          "resolved": true,
+          "signal_m": 206839.3004412662,
+          "threshold_factor": 10.0
+        }
+      ],
+      "pair": "T2<->T3"
+    },
+    {
+      "common_bodies": [
+        "Sun",
+        "Mercury",
+        "Venus",
+        "Earth",
+        "Moon",
+        "Mars"
+      ],
+      "metrics": [
+        {
+          "control_m": 0.0011194430453605221,
+          "control_tier": "T3",
+          "metric": "max|\u0394Earth| between tiers (m)",
+          "resolved": true,
+          "signal_m": 1147143231.87388,
+          "threshold_factor": 10.0
+        },
+        {
+          "control_m": 0.09386909018797532,
+          "control_tier": "T3",
+          "metric": "max|\u0394Moon| between tiers (m)",
+          "resolved": true,
+          "signal_m": 1147143231.87388,
+          "threshold_factor": 10.0
+        },
+        {
+          "control_m": 2.443464379256652e-09,
+          "control_tier": "T3",
+          "metric": "max|\u0394barycentre['Sun', 'Mercury', 'Venus', 'Earth', 'Moon', 'Mars']| (m)",
+          "resolved": true,
+          "signal_m": 1147143231.8738806,
+          "threshold_factor": 10.0
+        }
+      ],
+      "pair": "T3<->T4"
+    }
+  ]
+}

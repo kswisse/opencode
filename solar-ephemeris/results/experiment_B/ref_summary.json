@@ -1,0 +1,34 @@
+{
+  "config": "DE440-derived IC, Sun-Earth, 7 d, dt = P_SE/divisor, same grid both integrators (\u00a73.1 row B)",
+  "experiment_id": "B/ref",
+  "note": "model/reference discrepancy for both wings \u2014 no overall ranking claim (\u00a73.1 row B); record completes after A2 (\u00a711).",
+  "observations": {
+    "H_B2_rk4_endpoint_smaller_each_dt": false
+  },
+  "per_divisor": [
+    {
+      "divisor": 500,
+      "rk4_max_E_pos_m": 5587809.198262721,
+      "rk4_smaller": false,
+      "verlet_max_E_pos_m": 5344879.491591906
+    },
+    {
+      "divisor": 1000,
+      "rk4_max_E_pos_m": 5073209.534864657,
+      "rk4_smaller": false,
+      "verlet_max_E_pos_m": 5009476.26904684
+    },
+    {
+      "divisor": 2000,
+      "rk4_max_E_pos_m": 5073209.41152748,
+      "rk4_smaller": false,
+      "verlet_max_E_pos_m": 5057060.627510956
+    },
+    {
+      "divisor": 4000,
+      "rk4_max_E_pos_m": 5199954.085631257,
+      "rk4_smaller": false,
+      "verlet_max_E_pos_m": 5195890.136555699
+    }
+  ]
+}

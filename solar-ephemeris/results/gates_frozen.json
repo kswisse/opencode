@@ -1,0 +1,79 @@
+{
+  "a1_order_windows": {
+    "rk4": [
+      3.5,
+      4.5
+    ],
+    "verlet": [
+      1.5,
+      2.5
+    ]
+  },
+  "a2_floor_ratio_rule": 2.0,
+  "c_signal_factor": 10.0,
+  "e_conervation_gates": {
+    "angmom_rel_max": 1e-08,
+    "energy_rel_max": 1e-06,
+    "momentum_rel_max": 1e-10
+  },
+  "e_has_error_acceptance_threshold": false,
+  "evidence_after_observation": {
+    "1d": {
+      "all_structural_gates_passed": true,
+      "gate_names": [
+        "1 numerical stability (all arrays finite)",
+        "2 deterministic reproducibility (2 runs bitwise + equal hashes)",
+        "3 successful completion (n_steps + step*dt sample grid)",
+        "4a conservation max|dE/E0|",
+        "4b conservation max|P_rel|",
+        "4c conservation max|\u0394L|/|L0|",
+        "5 valid metadata/provenance (\u00a76d fields + kernel hashes == manifest)",
+        "6 absence of numerical failure (evidence: gates 1 + 3)"
+      ]
+    },
+    "30d": {
+      "all_structural_gates_passed": true,
+      "gate_names": [
+        "1 numerical stability (all arrays finite)",
+        "2 deterministic reproducibility (2 runs bitwise + equal hashes)",
+        "3 successful completion (n_steps + step*dt sample grid)",
+        "4a conservation max|dE/E0|",
+        "4b conservation max|P_rel|",
+        "4c conservation max|\u0394L|/|L0|",
+        "5 valid metadata/provenance (\u00a76d fields + kernel hashes == manifest)",
+        "6 absence of numerical failure (evidence: gates 1 + 3)"
+      ]
+    }
+  },
+  "experiment_id": "freeze/operational-gates",
+  "frozen_at": "2026-10-03T16:13:48+0700",
+  "growth_sse_ratio": 0.1,
+  "momentum_scale_definition": "|P(t) - P(0)| / sum_i m_i |v_i(t)| (masses = GM/G)",
+  "roundoff_floor_m": 3.3306690738754696e-05,
+  "source": "design \u00a76b/\u00a76a \u2014 constants COPIED, never re-derived; step 7 of \u00a711 forbids deriving any threshold from observed error",
+  "stage10_bands_phase4": {
+    "E_pos": [
+      150.0,
+      1510000.0
+    ],
+    "E_vel": [
+      0.00048,
+      4.88
+    ]
+  },
+  "stage9_bands_phase4": {
+    "E_pos": [
+      50000.0,
+      510000000.0
+    ],
+    "E_rel_max": [
+      0.0,
+      0.00345
+    ],
+    "E_vel": [
+      0.16,
+      1650.0
+    ]
+  },
+  "verlet_drift_max_per_period": 1e-12
+}
