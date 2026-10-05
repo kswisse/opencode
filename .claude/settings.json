@@ -1,0 +1,15 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "WebSearch|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Opencode/.hyperresearch/hook.js\""
+          }
+        ]
+      }
+    ]
+  }
+}

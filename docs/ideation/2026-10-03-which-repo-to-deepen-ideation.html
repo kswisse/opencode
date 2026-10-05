@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ideation: Flagship repo decision — 2026-10-03</title>
+<style>
+  :root{
+    --bg:#fbfbfc; --ink:#1c1f23; --muted:#5c636d; --line:#e3e5e8;
+    --card:#ffffff; --accent:#2f5fd0; --accent-soft:#e9eefb;
+    --ok-soft:#e7f3ea; --ok-ink:#1e6b34; --warn-soft:#fdf1e3; --warn-ink:#8a5a17;
+    --bad-soft:#fbeaea; --bad-ink:#9c2f2f; --neutral-soft:#eef0f2;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font:15px/1.65 "Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;}
+  main{max-width:960px;margin:0 auto;padding:48px 24px 72px}
+  h1{font-size:28px;line-height:1.25;margin:.15em 0 .35em}
+  h2{font-size:20px;margin:46px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line)}
+  h3{font-size:17px;margin:26px 0 8px}
+  h4{font-size:15px;margin:18px 0 6px}
+  p{margin:.5em 0;max-width:76ch}
+  a{color:var(--accent)}
+  code{background:var(--neutral-soft);border-radius:4px;padding:1px 5px;
+    font:13px/1.4 "Cascadia Code",Consolas,"Courier New",monospace}
+  .eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--accent);font-weight:600;margin:0}
+  .meta{display:flex;flex-wrap:wrap;gap:6px 22px;margin:14px 0 0;
+    font-size:13px;color:var(--muted)}
+  .meta div{display:flex;gap:6px}
+  .meta dt{font-weight:600;color:var(--ink)}
+  .meta dd{margin:0}
+  .stats{display:flex;gap:10px;margin:22px 0 0;flex-wrap:wrap}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:8px;
+    padding:8px 14px;font-size:13px}
+  .stat b{display:block;font-size:18px}
+  .nav{background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:12px 20px;margin:22px 0 0}
+  .nav ol{margin:.3em 0;padding-left:1.5em;columns:2;column-gap:32px}
+  .nav li{margin:.2em 0;break-inside:avoid}
+  .context{background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:16px 20px}
+  .context ul{margin:.4em 0;padding-left:1.2em}
+  .context li{margin:.25em 0}
+  .axes{background:var(--accent-soft);border:1px solid #cdd8f4;border-radius:10px;
+    padding:12px 20px;margin:0}
+  .axes ul{margin:.3em 0;padding-left:1.2em}
+  .axes li{margin:.2em 0}
+  .chip{display:inline-block;border-radius:999px;padding:2px 10px;
+    font-size:12px;font-weight:600;background:var(--neutral-soft);color:var(--ink)}
+  .chip.win{background:var(--ok-soft);color:var(--ok-ink)}
+  .chip.unc{background:var(--warn-soft);color:var(--warn-ink);font-size:10.5px;
+    padding:1px 7px;vertical-align:2px}
+  .callout{border:1px solid #eed9b5;background:var(--warn-soft);border-radius:10px;
+    padding:14px 20px;margin:14px 0}
+  .callout .eyebrow{color:var(--warn-ink)}
+  .callout.good{border-color:#c3e2cd;background:var(--ok-soft)}
+  .callout.good .eyebrow{color:var(--ok-ink)}
+  .callout ul{margin:.4em 0;padding-left:1.2em}
+  table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--card);
+    margin:12px 0}
+  th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;
+    vertical-align:top}
+  th{background:var(--neutral-soft);font-size:11.5px;text-transform:uppercase;
+    letter-spacing:.04em}
+  td b.sc{font-size:15px}
+  .ev{display:block;font-size:11.5px;color:var(--muted);font-weight:400;
+    line-height:1.45;margin-top:2px}
+  tr.winner td{background:#f3f7ee}
+  td.wt{font-size:16px;font-weight:700;text-align:center}
+  .qa{margin:10px 0 0}
+  .qa dt{font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+    font-weight:700;color:var(--muted);margin-top:8px}
+  .qa dd{margin:1px 0 0}
+  article.cand{background:var(--card);border:1px solid var(--line);
+    border-radius:12px;padding:16px 22px;margin:16px 0}
+  article.cand h3{margin-top:0}
+  .cand-head{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline}
+  .phase{background:var(--card);border:1px solid var(--line);border-radius:12px;
+    padding:14px 20px;margin:14px 0}
+  .phase h4{margin-top:0}
+  .phase .ph-label{font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--accent);font-weight:700}
+  ul.tight{margin:.4em 0;padding-left:1.2em}
+  ul.tight li{margin:.22em 0}
+  figure{margin:14px 0 2px;padding:12px;background:#fcfcfd;
+    border:1px solid var(--line);border-radius:10px;overflow-x:auto}
+  figure svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  figcaption{font-size:12px;color:var(--muted);text-align:center;margin-top:8px}
+  footer.composition-signal{margin-top:48px;padding-top:12px;
+    border-top:1px solid var(--line);font-size:12.5px;color:var(--muted)}
+  footer code{font-size:12px}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <p class="eyebrow">Ideation — revised</p>
+  <h1>Flagship decision: repo nào trở thành dự án phát triển sâu cho cycle tới</h1>
+  <dl class="meta">
+    <div><dt>Date</dt><dd><time datetime="2026-10-03">2026-10-03</time></dd></div>
+    <div><dt>Topic</dt><dd>which-repo-to-deepen</dd></div>
+    <div><dt>Focus</dt><dd>Chọn 1 repo flagship cho cycle phát triển kế tiếp (4–10 tuần) + depth path cụ thể — quyết định dựa trên bằng chứng, không defer lại cho người đọc</dd></div>
+    <div><dt>Mode</dt><dd>repo-grounded</dd></div>
+  </dl>
+  <div class="stats">
+    <div class="stat"><b>5</b>flagship candidates scored</div>
+    <div class="stat"><b>6</b>weighted axes</div>
+    <div class="stat"><b>3</b>fresh repo inspections</div>
+    <div class="stat"><b>8.7</b>top score (QRE)</div>
+  </div>
+  <nav class="nav" aria-label="Sections">
+    <ol>
+      <li><a href="#a">A. Final flagship decision</a></li>
+      <li><a href="#b">B. Runner-up candidates</a></li>
+      <li><a href="#c">C. Flagship depth thesis</a></li>
+      <li><a href="#d">D. 4–10 week execution path</a></li>
+      <li><a href="#e">E. Supporting portfolio policy</a></li>
+      <li><a href="#f">F. Repository hygiene prerequisites</a></li>
+      <li><a href="#g">G. Rejected ideas</a></li>
+      <li><a href="#rec">Recommendation</a></li>
+    </ol>
+  </nav>
+</header>
+
+<section>
+  <h2>Topic Axes</h2>
+  <div class="axes">
+    <ul>
+      <li><strong>strategic-fit</strong> — đóng góp vào hồ sơ dài hạn: systems/CE, embedded/hardware, AI/ML, research, applied engineering, technical originality, câu chuyện nộp hồ sơ France STEM, khả năng chứng tỏ depth <em>tăng dần</em> thay vì chỉ tăng số feature</li>
+      <li><strong>feature-runway</strong> — extension/backlog đã thiết kế nhưng chưa làm</li>
+      <li><strong>domain-depth-payoff</strong> — chiều sâu chuyên môn nào trả lãi cao nhất</li>
+      <li><strong>docs-depth</strong> — repo page sâu bao nhiêu so với code thật có</li>
+      <li><strong>engineering-foundation</strong> — CI/test/gate khai gì vs enforce gì</li>
+      <li><strong>iteration-momentum</strong> — commit organic thật sự đi đâu</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>Codebase Context</h2>
+  <div class="context">
+    <p>Bảy repo github.com/kswisse; audit hiện có giữ nguyên (commit distribution, test counts, CI gaps, README contradictions, planned-but-unimplemented, bring-up status, placeholder tests, docs depth, architecture seams, maturity, evidence quality). Ba đợt kiểm tra repo mới (clone tạm, chỉ đọc) bổ sung bằng chứng cho các ứng viên chưa được soi kỹ:</p>
+    <ul>
+      <li><strong>Cộng dồn audit cũ:</strong> batch badge commit cùng phút 2026-09-26T14:21:14–38Z ở cả 7; commit organic: exam-trainer 31 / QRE 23 / còn lại ≤7; median README ~100 dòng, 5/7 zero images; không repo nào có coverage/dependabot gate; QRE README mâu thuẫn MIT vs “Proprietary”; backtester README placeholder “Time taken: … ms”; smart-clock “Hardware Bring-up Ready / Architecture Frozen” nhưng chưa bring-up.</li>
+      <li><strong>AI-DermDiag (mới):</strong> checkpoint thật tồn tại (358/358 tensor khác ImageNet, <code>val_acc=0.852</code> nhúng trong .pt), pipeline train/eval chạy lại được, Grad-CAM + FastAPI + React + Docker có CI xanh — nhưng <strong>39.5% val images bị lesion-level leakage</strong> (725 lesion_id chồng nhau, split bỏ qua <code>lesion_id</code>), không có held-out test, README không công bố số nào, CI chỉ chạy 3/17 test, dataset Dataverse CC BY-NC 4.0 + ISIC2018 test set nằm cùng record.</li>
+      <li><strong>school-heat-intelligence (mới):</strong> 119 test pass + CI, QC/provenance discipline thật — nhưng <strong>4032/4032 rows provenance=synthetic</strong>, không có một dòng network code nào, “research” tự chứng minh giả định của chính generator (r=−0.31 được hard-code rồi “khám phá lại”), intervention sim vô effect với canopy, dashboard 1 trang (7 trang bị ẩn), 5 commits.</li>
+      <li><strong>QRE (mới):</strong> đường experiments <strong>hoàn toàn offline</strong> (seed 42, SHA-256 per-strategy, <code>datasets/replay.py</code> “Never contacts any provider”) → reproduction byte-stable khả thi; DSR/PSR đã implement thật (<code>statistics/dsr.py</code> Bailey &amp; López de Prado Eq.6 + unit + property tests); walk-forward/purged CV/CSCV-PBO <strong>vắng mặt và được chính docs thừa nhận</strong> (<code>docs/experiments.md:126</code> “No walk-forward or out-of-sample testing”); chưa có Makefile/<code>[project.scripts]</code> hay golden result artifact.</li>
+      <li><strong>french-exam-trainer (mới):</strong> Supabase kẹt trong 10 file (auth+storage; DB là Prisma/Postgres thuần) → migratable nhưng <code>Profile.id := supabase auth.users.id</code> ép remap ID; Phase 4 plumbing đã viết sẵn (<code>lib/ai/gemini.ts classifyMistake()</code>) → wiring nhỏ; 4 test/138 src.</li>
+      <li><strong>backtester (mới):</strong> engine chỉ 361 LOC, book là L2 price-level aggregate 100 mức với <code>std::sort</code> toàn prefix mỗi update, không latency harness (chỉ 1 wall-clock print), zero perf work → <strong>không vượt “top five”</strong> về depth (xem §B test ở cuối mục A).</li>
+    </ul>
+  </div>
+</section>
+
+<section id="a">
+  <h2>A. Final flagship decision</h2>
+
+  <h3>A.1 Decision matrix</h3>
+  <p>Trọng số theo đề xuất (chỉ chỉnh nếu evidence cho lý do đủ mạnh — không có lý do nào đủ mạnh, giữ nguyên). Mỗi ô score kèm bằng chứng repo cụ thể; ô phụ thuộc điều kiện bên ngoài được đánh dấu <span class="chip unc">UNCERTAIN</span>. Matrix là công cụ hỗ trợ quyết định, không phải kết luận tự nó.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Candidate</th>
+        <th>Strategic fit (25%)</th>
+        <th>Depth potential (25%)</th>
+        <th>Evidence potential (15%)</th>
+        <th>Foundation (15%)</th>
+        <th>Originality (10%)</th>
+        <th>Demoability (10%)</th>
+        <th>Weighted</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr class="winner">
+        <td><strong>quant-research-engine</strong></td>
+        <td><b class="sc">9</b><span class="ev">Research + applied engineering cốt lõi; 6.4k LOC nền tảng nghiên cứu; history depth tăng dần: DSR → OOS validation</span></td>
+        <td><b class="sc">9</b><span class="ev">OOS layer vắng mặt và được chính docs thừa nhận (experiments.md:126); DSR đã xong → bài toán kế tiếp xác định rõ, có sẵn nơi để đặt code</span></td>
+        <td><b class="sc">9</b><span class="ev">Pipeline offline + seed cố định → artifact byte-stable, CI gate được; reviewer tự rerun được</span></td>
+        <td><b class="sc">9</b><span class="ev">CI chặt nhất/7 (ruff + mypy strict + pytest), 11.3k test LOC (1.78×), 9 file hypothesis property tests</span></td>
+        <td><b class="sc">7</b><span class="ev">Phương pháp đã công bố (Bailey/López de Prado) nhưng sinh viên rất ít implement đúng; conformance C++ là twist riêng</span></td>
+        <td><b class="sc">8</b><span class="ev"><code>make reproduce</code> + bảng số liệu — mạnh với reviewer kỹ thuật, kém wow thị giác</span></td>
+        <td class="wt">8.7</td>
+      </tr>
+      <tr>
+        <td><strong>smart-clock</strong></td>
+        <td><b class="sc">9</b><span class="ev">Embedded/hardware = 2 dimension đầu hồ sơ; 82 file firmware, 179 test/8 suite, arch frozen</span></td>
+        <td><b class="sc">7.5</b><span class="chip unc">UNCERTAIN</span><span class="ev">Bring-up + power measurement + reliability = embedded depth thật; ceiling là engineering, không phải research — và phụ thuộc hardware</span></td>
+        <td><b class="sc">8</b><span class="chip unc">UNCERTAIN</span><span class="ev">Video + số đo dòng điện = unfakeable nhất portfolio — nhưng chỉ khi có hardware; sim không thay được (render rỗng, đã verify)</span></td>
+        <td><b class="sc">7</b><span class="ev">9 sim test suite + CI sim job; không type gate; phía hardware chưa có test nào</span></td>
+        <td><b class="sc">8</b><span class="ev">Thiết bị vật lý + số đo hiếm trong portfolio applicant</span></td>
+        <td><b class="sc">8</b><span class="chip unc">UNCERTAIN</span><span class="ev">Video clock chạy thật = demo mạnh nhất; điều kiện: có hardware</span></td>
+        <td class="wt">8.0</td>
+      </tr>
+      <tr>
+        <td><strong>AI-DermDiag</strong></td>
+        <td><b class="sc">7</b><span class="ev">Trúng profile AI/ML; nhưng bề mặt ML là textbook (EfficientNet-B0 transfer, plain CE, gradcam recipe); không có systems/embedded</span></td>
+        <td><b class="sc">7.5</b><span class="ev">Defect định lượng sẵn: 39.5% leakage + calibration path; ceiling = evaluation study xác định, không có novel method</span></td>
+        <td><b class="sc">7</b><span class="chip unc">UNCERTAIN</span><span class="ev">ISIC2018 external test nằm cùng Dataverse record; nhưng headline number <strong>bị chặn</strong> phải retrain GPU để có split sạch</span></td>
+        <td><b class="sc">4.5</b><span class="ev">CI chạy 3/17 test (ci.yml:21), không lint, ml/ zero test, e2e rỗng</span></td>
+        <td><b class="sc">6</b><span class="ev">Câu chuyện “tìm &amp; sửa leakage của chính mình” là differentiator trung thực; model thì commodity</span></td>
+        <td><b class="sc">8</b><span class="ev">Web app đã deploy + Grad-CAM visuals chạy sẵn</span></td>
+        <td class="wt">6.8</td>
+      </tr>
+      <tr>
+        <td><strong>school-heat-intelligence</strong></td>
+        <td><b class="sc">6</b><span class="ev">Applied data science môi trường — không trúng systems/embedded/AI-core</span></td>
+        <td><b class="sc">7</b><span class="chip unc">UNCERTAIN</span><span class="ev">Calibration weight vs data thật là problem thật (README tự nêu extension points) — conditional landing data thật</span></td>
+        <td><b class="sc">6</b><span class="chip unc">UNCERTAIN</span><span class="ev">Validation harness có sẵn nhưng hôm nay 100% data synthetic; ground truth cho “risk” là mắt xích yếu nhất (không có sensor/field data)</span></td>
+        <td><b class="sc">7</b><span class="ev">119 test pass + CI; provenance/QC discipline; không lint/type</span></td>
+        <td><b class="sc">6.5</b><span class="ev">Kỷ luật provenance hiếm; dashboard + heuristic thì phổ biến</span></td>
+        <td><b class="sc">7</b><span class="ev">Map thành phố thật sẽ demo tốt; hôm nay là synthetic NYC</span></td>
+        <td class="wt">6.6</td>
+      </tr>
+      <tr>
+        <td><strong>french-exam-trainer</strong></td>
+        <td><b class="sc">6</b><span class="ev">Applied engineering sản phẩm thật; chủ đề DELF không phải tín hiệu depth STEM; “AI” = wiring API (<code>classifyMistake()</code>)</span></td>
+        <td><b class="sc">6.5</b><span class="ev">Response-history → SRS/adaptive là depth thật; nhưng evaluation kết quả học tập cần người dùng — evidence chain kém</span></td>
+        <td><b class="sc">5.5</b><span class="ev">Demo = app chạy thật; evidence “học tốt hơn” cần user study, khó producing trong cycle</span></td>
+        <td><b class="sc">4.5</b><span class="ev">4 test/138 src; auth infra chết (Supabase project gone, 10 file ảnh hưởng, Profile.id phải remap)</span></td>
+        <td><b class="sc">5</b><span class="ev">Exam practice platform phổ biến</span></td>
+        <td><b class="sc">7</b><span class="ev">Next.js app + AI import pipeline chạy được</span></td>
+        <td class="wt">5.8</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <figure>
+    <svg viewBox="0 0 840 224" role="img" aria-label="Weighted scores: QRE 8.7, smart-clock 8.0, AI-DermDiag 6.8, school-heat 6.6, exam-trainer 5.8">
+      <text x="200" y="28" text-anchor="end" font-size="13" font-weight="600" fill="#1c1f23">quant-research-engine</text>
+      <rect x="210" y="14" width="487" height="22" rx="4" fill="#2f5fd0"/>
+      <text x="707" y="30" font-size="13" font-weight="700" fill="#1c1f23">8.7</text>
+      <text x="200" y="66" text-anchor="end" font-size="13" fill="#1c1f23">smart-clock</text>
+      <rect x="210" y="52" width="448" height="22" rx="4" fill="#7a97db"/>
+      <text x="668" y="68" font-size="13" font-weight="700" fill="#1c1f23">8.0</text>
+      <text x="200" y="104" text-anchor="end" font-size="13" fill="#1c1f23">AI-DermDiag</text>
+      <rect x="210" y="90" width="381" height="22" rx="4" fill="#9fb2e0"/>
+      <text x="601" y="106" font-size="13" font-weight="700" fill="#1c1f23">6.8</text>
+      <text x="200" y="142" text-anchor="end" font-size="13" fill="#1c1f23">school-heat-intelligence</text>
+      <rect x="210" y="128" width="370" height="22" rx="4" fill="#9fb2e0"/>
+      <text x="590" y="144" font-size="13" font-weight="700" fill="#1c1f23">6.6</text>
+      <text x="200" y="180" text-anchor="end" font-size="13" fill="#1c1f23">french-exam-trainer</text>
+      <rect x="210" y="166" width="325" height="22" rx="4" fill="#c3cde8"/>
+      <text x="545" y="182" font-size="13" font-weight="700" fill="#1c1f23">5.8</text>
+      <text x="210" y="212" font-size="11" fill="#5c636d">Weighted total (0–10). Ba ô smart-clock / hai ô school-heat / một ô AI-DermDiag mang tính điều kiện — xem cột UNCERTAIN trong bảng.</text>
+    </svg>
+    <figcaption>Weighted totals theo trọng số 25/25/15/15/10/10 — QRE dẫn 0.7 điểm, chủ yếu nhờ foundation + evidence + depth potential.</figcaption>
+  </figure>
+
+  <h3>A.2 Candidate evaluations (11 câu hỏi × 5 ứng viên)</h3>
+
+  <article class="cand">
+    <div class="cand-head"><h3>1. quant-research-engine</h3><span class="chip win">Flagship recommendation</span></div>
+    <dl class="qa">
+      <dt>Công nghệ có thật không?</dt>
+      <dd>64 py/6.365 LOC research platform; DSR+PSR implement thật (Bailey &amp; López de Prado Eq.6, dsr.py:89,138) kèm unit + property tests; pipeline experiment offline hoàn toàn (seed 42, SHA-256 per-strategy); CI chặt nhất trong 7 repo.</dd>
+      <dt>Yếu / nông?</dt>
+      <dd>Chưa có walk-forward/purged CV/CSCV-PBO — chính docs thừa nhận (experiments.md:126, architecture.md:262); không có reproduction entrypoint (không Makefile, không [project.scripts]); không có golden result artifact; README license/status mâu thuẫn.</dd>
+      <dt>Vertical slice 4–10 tuần mạnh nhất?</dt>
+      <dd>Lớp OOS validation + <code>make reproduce</code> + golden results + CI drift gate — chi tiết ở mục D.</dd>
+      <dt>Hard problem kế tiếp (code hỗ trợ sẵn)?</dt>
+      <dd>Out-of-sample validity dưới dữ liệu non-IID/nhãn overlap: purged CV + walk-forward + CSCV/PBO. Stats module, experiment runner, study hiện có là nơi đáp landing; gap được thừa nhận sẵn.</dd>
+      <dt>Evidence producible?</dt>
+      <dd><code>results/overfitting-study.json</code> regenerate byte-identical; bảng naive-vs-purged divergence; reproducibility gate trong CI — reviewer tự rerun được, fully offline.</dd>
+      <dt>Không thể fake bằng README?</dt>
+      <dd>CI gate regenerate byte-identical; property tests; bảng kết quả gắn với artifact do CI sản xuất.</dd>
+      <dt>Validation bên ngoài?</dt>
+      <dd>Phương pháp có peer-reviewed foundation; tùy chọn: conformance với C++ backtester (chỉ theo đuổi khi QRE là flagship).</dd>
+      <dt>GitHub page sau cycle?</dt>
+      <dd>Reproducibility section + số OOS + README số sinh từ artifact + sơ đồ validation layer; hết “Phase 0” mâu thuẫn.</dd>
+      <dt>Thông điệp admissions/interview?</dt>
+      <dd>Research rigor + maturity định lượng + trung thực trong validation — câu chuyện research mạnh nhất trong 5 ứng viên.</dd>
+      <dt>Rủi ro lớn nhất?</dt>
+      <dd>Golden determinism giữa môi trường (numpy/scipy drift — xử lý bằng pin version + tolerance); effort CSCV; quyết định license (MIT vs Proprietary) là việc của owner.</dd>
+      <dt>Ceiling depth 4–10 tuần?</dt>
+      <dd>Cao — một lớp research-validity hoàn chỉnh, mở rộng được sang Systems A–D sau này.</dd>
+    </dl>
+  </article>
+
+  <article class="cand">
+    <div class="cand-head"><h3>2. smart-clock</h3><span class="chip">Runner-up #1</span></div>
+    <dl class="qa">
+      <dt>Công nghệ có thật không?</dt>
+      <dd>82 file firmware, 26-file simulator + harness, 179 test/8 suite, 18 REST endpoint, web UI offline, CI sim job, arch frozen, “Hardware Bring-up Ready”.</dd>
+      <dt>Yếu / nông?</dt>
+      <dd>Sim render rỗng (mọi <code>render()</code> trong mock_hal = <code>{}</code> — đã verify) → không screenshot nào tạo được từ sim; zero bằng chứng hardware; placeholder screenshot/team; chưa có số đo power dù roadmapclaim −99%.</dd>
+      <dt>Vertical slice 4–10 tuần?</dt>
+      <dd>Bring-up thật + đo dòng điện (deep-sleep claim) + display/input reliability + photo/video demo.</dd>
+      <dt>Hard problem kế tiếp?</dt>
+      <dd>Hardware/software integration + power budget validation — backlog đã cost sẵn (ROADMAP Phases 5–10).</dd>
+      <dt>Evidence producible?</dt>
+      <dd>Plot số đo dòng điện, log timing/reliability, demo video, ảnh thiết bị — unfakeable nhất portfolio.</dd>
+      <dt>Không thể fake?</dt>
+      <dd>Thiết bị vật lý + số đo — không có đường giả nào.</dd>
+      <dt>Validation bên ngoài?</dt>
+      <dd>So datasheet ESP32 deep-sleep (µA), benchmark cộng đồng.</dd>
+      <dt>GitHub page sau cycle?</dt>
+      <dd>Screenshot/video thật, bảng power, demo — hết placeholder.</dd>
+      <dt>Thông điệp admissions?</dt>
+      <dd>Embedded/systems ship được hardware thật — hiếm; nhưng ceiling là engineering, không research.</dd>
+      <dt>Rủi ro lớn nhất?</dt>
+      <dd>Procurement hardware (phụ thuộc bên ngoài, không verify được); không có fallback sim (đã xác minh); thời gian bring-up khó ước lượng.</dd>
+      <dt>Ceiling depth?</dt>
+      <dd>Embedded depth vững — không đạt research-grade.</dd>
+    </dl>
+  </article>
+
+  <article class="cand">
+    <div class="cand-head"><h3>3. AI-DermDiag</h3><span class="chip">Runner-up #2</span></div>
+    <dl class="qa">
+      <dt>Công nghệ có thật không?</dt>
+      <dd>Checkpoint thật (358/358 tensor khác ImageNet, val_acc 0.852 nhúng trong .pt), pipeline train/eval rerunnable (seed 42), Grad-CAM + FastAPI + React + Docker, CI xanh, 17 test pass.</dd>
+      <dt>Yếu / nông?</dt>
+      <dd><strong>39.5% lesion-level leakage</strong> (725 lesion_id chồng; split không xét lesion_id); không held-out test (val kiêm chọn model + báo cáo → optimistic bias); README không có số nào; CI chạy 3/17; ml/ zero test; e2e rỗng.</dd>
+      <dt>Vertical slice 4–10 tuần?</dt>
+      <dd>Leakage audit → GroupShuffleSplit theo lesion_id → retrain (Colab T4) → calibration (ECE/reliability) → external eval ISIC2018 → report.</dd>
+      <dt>Hard problem kế tiếp (code hỗ trợ)?</dt>
+      <dd>Evaluation integrity + calibration — train script có, eval rerunnable, dataset tải được, defect đã định lượng 39.5%.</dd>
+      <dt>Evidence producible?</dt>
+      <dd>eval_report.json, bảng audit leakage, reliability plots, bảng external ISIC, repro commands.</dd>
+      <dt>Không thể fake?</dt>
+      <dd>Số freshly-eval output, tensor-diff proof, con số leakage tính từ metadata thật.</dd>
+      <dt>Validation bên ngoài?</dt>
+      <dd>ISIC2018 Task 3 test + ground truth cùng record Dataverse — external eval thật. Lưu ý data CC BY-NC 4.0.</dd>
+      <dt>GitHub page sau cycle?</dt>
+      <dd>Bảng metrics + plots + số external + 17/17 test chạy CI.</dd>
+      <dt>Thông điệp admissions?</dt>
+      <dd>Applied AI + honest rigor; nhưng model là textbook “CNN trên HAM10000” — depth nằm ở evaluation, không ở model.</dd>
+      <dt>Rủi ro lớn nhất?</dt>
+      <dd>Headline number bị chặn sau retrain GPU; data license NC; medical-claim framing; foundation yếu nhất nhóm nghiêm túc.</dd>
+      <dt>Ceiling depth?</dt>
+      <dd>Study evaluation/calibration nghiêm túc — không đạt novel method hay clinical validation.</dd>
+    </dl>
+  </article>
+
+  <article class="cand">
+    <div class="cand-head"><h3>4. school-heat-intelligence</h3><span class="chip">Runner-up #3</span></div>
+    <dl class="qa">
+      <dt>Công nghệ có thật không?</dt>
+      <dd>Heat index Rothfusz đúng, risk engine, QC fail được trên data xấu, stats (Pearson/Spearman/OLS/Cohen’s d), holdout forecast harness (MAE 6.7–7.0), 119 test pass + CI, provenance discipline.</dd>
+      <dt>Yếu / nông?</dt>
+      <dd>4032/4032 rows synthetic; không có network code; “research” tự xác nhận giả định hard-code trong generator (r=−0.31); intervention vô effect với canopy; repeated-measures = stub; dashboard 1/8 trang; 5 commits.</dd>
+      <dt>Vertical slice 4–10 tuần?</dt>
+      <dd>Real-city ingestion (Open-Meteo + ECOSTRESS LST) → provenance flipped → calibration vs reference station → validation report + map.</dd>
+      <dt>Hard problem kế tiếp (code hỗ trợ)?</dt>
+      <dd>Calibration composite risk score với data thật — loader/QC/provenance/stats/harness đều có; README tự nêu extension point; data ngoài free &amp; ổn định (đã xác minh điều khoản).</dd>
+      <dt>Evidence producible?</dt>
+      <dd>Validation report vs baseline, figure provenance <code>measured</code>, uncertainty band, map — generator báo cáo có sẵn.</dd>
+      <dt>Không thể fake?</dt>
+      <dd>Figure sinh từ series fetched thật (provenance nằm trong từng row); số forecast beat baseline.</dd>
+      <dt>Validation bên ngoài?</dt>
+      <dd>Open-Meteo/ERA5, NASA ECOSTRESS, ngưỡng Météo-France — đều free.</dd>
+      <dt>GitHub page sau cycle?</dt>
+      <dd>Map thành phố thật + VALIDATION.md + provenance không còn synthetic.</dd>
+      <dt>Thông điệp admissions?</dt>
+      <dd>Data science môi trường liên ngành — <em>nếu</em> data thật landing; hôm nay đọc là “dashboard heuristic trên data giả”.</dd>
+      <dt>Rủi ro lớn nhất?</dt>
+      <dd>Ground truth cho “risk” (HIGH — không có sensor/field data); deps geospatial mới (rasterio…); ECOSTRESS revisit thưa; toàn bộ path conditional.</dd>
+      <dt>Ceiling depth?</dt>
+      <dd>Pilot 1 thành phố validate được với data mở — không tới causal/health outcomes.</dd>
+    </dl>
+  </article>
+
+  <article class="cand">
+    <div class="cand-head"><h3>5. french-exam-trainer</h3><span class="chip">Scored 5.8 — thấp nhất nhóm</span></div>
+    <dl class="qa">
+      <dt>Công nghệ có thật không?</dt>
+      <dd>Next.js 16 + Prisma, scoring engine (4 unit test files cover các loại câu hỏi), AI import pipeline (pdf-parse/tesseract/Gemini), auth middleware, 31 commit organic (cao nhất).</dd>
+      <dt>Yếu / nông?</dt>
+      <dd>4 test/138 src; Supabase auth+storage đã chết (10 file, Profile.id phải remap); playwright devDep không wired; Phase 4 stub <code>category=UNKNOWN</code>.</dd>
+      <dt>Vertical slice 4–10 tuần?</dt>
+      <dd>Migration infra (auth+storage ra khỏi Supabase) → response-history model → wiring Phase 4 (code sẵn trong <code>lib/ai/gemini.ts</code>) → SRS.</dd>
+      <dt>Hard problem kế tiếp?</dt>
+      <dd>Response-history → adaptive practice; nhưng evaluation kết quả học tập cần user study — evidence chain kém nhất.</dd>
+      <dt>Evidence producible?</dt>
+      <dd>App demo + test suite; “học tốt hơn” không producible trong cycle không có người dùng.</dd>
+      <dt>Không thể fake?</dt>
+      <dd>App chạy thật + demo video (product-shaped, không research-shaped).</dd>
+      <dt>Validation bên ngoài?</dt>
+      <dd>Định dạng DELF (content alignment) — không có benchmark kỹ thuật.</dd>
+      <dt>GitHub page sau cycle?</dt>
+      <dd>Phase 4 live + test tăng + screenshot — mạnh hơn hôm nay nhưng vẫn là product page.</dd>
+      <dt>Thông điệp admissions?</dt>
+      <dd>Full-stack product engineering; chủ đề tiếng Pháp không cộng depth STEM.</dd>
+      <dt>Rủi ro lớn nhất?</dt>
+      <dd>Migration tax ăn time trước khi depth; Profile.id remap; outcome evidence cần người dùng.</dd>
+      <dt>Ceiling depth?</dt>
+      <dd>Product depth vững; evaluation science bị block không có user.</dd>
+    </dl>
+  </article>
+
+  <p><strong>Backtester candidate test:</strong> theo đề xuất, backtester chỉ được giữ làm ứng viên nếu evidence cho thấy nó có thể sâu hơn top-five một cách material. Evidence mới nói <em>không</em>: 361 LOC, book là 100-level aggregate với sort-toàn-prefix mỗi update, không latency harness, zero perf work — chỉ slice “tick-level matching + measured latency methodology” (3–4 tuần) có khả năng vượt top-five. Kết luận: loại khỏi matrix, giao vai trò <em>supporting</em> với slice systems của riêng nó (mục E). <strong>repo2web:</strong> không có evidence mới nào thay đổi kết luận cũ → không được promote, giữ maintenance.</p>
+
+  <h3>A.3 Recommendation &amp; reasoning</h3>
+  <div class="callout good">
+    <p class="eyebrow">Decision</p>
+    <p><strong>Flagship = quant-research-engine</strong> (weighted 8.7). Cách đạt được kết luận này, từng bước:</p>
+    <ol class="tight">
+      <li>Strategic-fit axis (25%) được chấm trên 5 ứng viên theo hồ sơ đã nêu — QRE và smart-clock dẫn (9/9), nhưng smart-clock đánh đổi bằng ba ô UNCERTAIN phụ thuộc procurement hardware.</li>
+      <li>Depth potential tách hai nhóm: QRE có hard problem <em>đã được chính docs thừa nhận</em> và có nơi đáp landing (stats module + runner + study sẵn); các ứng viên khác hoặc ceiling thấp hơn (smart-clock: engineering), hoặc evidence bị chặn (derm: GPU retrain), hoặc toàn bộ conditional (heat: data thật).</li>
+      <li>Evidence + foundation là nơi QRE bỏ xa: pipeline offline byte-stable + CI chặt nhất (11.3k test LOC) nghĩa là proof artifact <em>chạy được ngay</em>, không chờ điều kiện bên ngoài — trong khi foundation của derm (4.5) và trainer (4.5) nghĩa là depth xây trên đá mỏng.</li>
+      <li>Khoảng cách 8.7 vs 8.0 đến từ ô condition, không phải ấn tượng: smart-clock thắng QRE ở originality nhưng thua ở depth/evidence/foundation — và các ô thắng đó đều mang chip UNCERTAIN.</li>
+      <li>Originality (10%) không đủ để lật: derm “leakage story” và smart-clock “hardware moat” đều thật, nhưng trọng số thấp hơn depth+foundation cộng lại 40%.</li>
+    </ol>
+  </div>
+
+  <h3>A.4 What would make me change the decision</h3>
+  <div class="callout">
+    <p class="eyebrow">Disconfirming conditions — 3–5 điều kiện phản chứng</p>
+    <ul>
+      <li><strong>Nếu golden determinism không đạt được</strong> (regenerate byte-identical không ổn định giữa 2 môi trường sau khi đã pin dependency + tolerance) trong M1 → con đường evidence của QRE sụp → hạ xuống supporting, cân nhắc lại smart-clock.</li>
+      <li><strong>Nếu Study v2 không cho thấy chênh lệch naive-vs-honest nào</strong> trên controlled DGP (tức là purged/walk-forward không đổi được kết luận nào) → depth thesis mất “result” của nó → pivot Phase 1 sang execution-semantics/conformance, hoặc re-rank.</li>
+      <li><strong>Nếu hardware smart-clock xác nhận được sớm</strong> (có thiết bị + bring-up chạy được trong 2 tuần đầu) <em>và</em> narrative hồ sơ ưu tiên embedded/systems → strategic fit lật → chuyển flagship sang smart-clock.</li>
+      <li><strong>Nếu quyết định license (MIT vs Proprietary) không được owner chốt</strong> trước Phase 5 → repo không thể là public flagship artifact → blocker phải xử lý trước, không xử lý được thì re-rank.</li>
+      <li><strong>Nếu cửa sổ thời gian nhỏ hơn ~6 tuần</strong> → evidence-per-week của derm (leakage audit + CI fix = vài ngày) vượt QRE → re-rank theo schedule thật.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="b">
+  <h2>B. Runner-up candidates</h2>
+
+  <article class="cand">
+    <div class="cand-head"><h3>Runner-up #1 — smart-clock (8.0)</h3></div>
+    <p><strong>Chọn nó khi:</strong> hardware xác nhận sớm + narrative embedded-first. <strong>Không chọn vì:</strong></p>
+    <ul class="tight">
+      <li>Phụ thuộc procurement thiết bị — rủi ro bên ngoài chưa verify, và sim không thay được (mock render rỗng — hard constraint đã verify, không “invent screenshot-emulator path”).</li>
+      <li>Ceiling depth là engineering vững, không phải research — thua QRE ở chiều sâu câu chuyện.</li>
+      <li>Foundation nhẹ hơn (9 sim test, không type gate, phía hardware chưa test gì).</li>
+    </ul>
+    <p><strong>Điều kiện promote:</strong> disconfirming condition #3 phía trên — có hardware trước tuần 2 + narrative systems-first.</p>
+  </article>
+
+  <article class="cand">
+    <div class="cand-head"><h3>Runner-up #2 — AI-DermDiag (6.8)</h3></div>
+    <p><strong>Chọn nó khi:</strong> narrative AI/ML-first + GPU available tuần 1. <strong>Không chọn vì:</strong></p>
+    <ul class="tight">
+      <li>Foundation yếu nhất nhóm nghiêm túc: CI chạy 3/17 test, không lint, ml/ zero test — depth xây trên đá mỏng nhất.</li>
+      <li>Headline evidence bị chặn sau retrain GPU (checkpoint hiện tại contaminated by design — 39.5% leakage).</li>
+      <li>Bề mặt model commodity; ceiling = evaluation study, không có novel-method path trong 4–10 tuần.</li>
+    </ul>
+    <p><strong>Điều kiện promote:</strong> nếu QRE vướng disconfirming #1/#2 <em>và</em> GPU xác nhận — leakage-fix story là depth path ngắn nhất (ngày đầu đã ra evidence).</p>
+  </article>
+
+  <article class="cand">
+    <div class="cand-head"><h3>Runner-up #3 — school-heat-intelligence (6.6)</h3></div>
+    <p><strong>Không chọn vì:</strong></p>
+    <ul class="tight">
+      <li>Hôm nay 100% data synthetic + “research” circular (generator hard-code rồi tự rediscover) — chưa có gì để deepen <em>trên</em>.</li>
+      <li>Toàn bộ depth path conditional: phải landing data thật trước; ground truth cho “risk” là mắt xích yếu nhất (không sensor/field data — repeated_measures stub chứng minh phần này đã bị deferred).</li>
+      <li>Strategic fit thấp nhất nhóm giữa (6): không trúng systems/embedded/AI-core.</li>
+    </ul>
+    <p><strong>Điều kiện promote:</strong> nếu chứng minh được ingestion data thật (Open-Meteo + LST) chạy ổn định trong tuần đầu và reference station data sẵn có — khi đó nó là ứng viên “data science” hợp lệ.</p>
+  </article>
+
+  <p><strong>french-exam-trainer (5.8) không phải runner-up</strong> — điểm thấp nhất nhóm: migration tax trước, evidence “learning outcome” cần người dùng trong cycle, foundation 4/138. Giữ momentum bằng việc cho phép quay lại khi flagship đã ổn định (xem E).</p>
+</section>
+
+<section id="c">
+  <h2>C. Flagship depth thesis</h2>
+
+  <div class="callout good">
+    <p class="eyebrow">Depth Thesis</p>
+    <p><strong>QRE trở nên mạnh hơn đáng kể bằng cách giải quyết out-of-sample validity (walk-forward + purged CV + CSCV/PBO), chứng minh mọi con số công bố được tái tạo bằng một lệnh <code>make reproduce</code> chạy offline và được CI gate — biến một Phase-0 research repo có gap validation được thừa nhận thành research artifact mà reviewer tự rerun được.</strong></p>
+  </div>
+
+  <h3>Phase 0 — Baseline (verified hiện trạng)</h3>
+  <ul class="tight">
+    <li>64 py / 6.365 LOC src; 38 test file / 11.302 LOC (1.78×); CI ruff + mypy strict + pytest xanh (1006 test).</li>
+    <li>DSR/PSR implemented + unit/property tests (<code>statistics/dsr.py:89,138</code>); study có bảng kết quả trong <code>docs/research/overfitting-study.md</code>.</li>
+    <li>Experiment path offline 100% (seed 42, SHA-256 per-strategy, replay “never contacts any provider”).</li>
+    <li>Gap đã thừa nhận: không walk-forward/purged CV/CSCV-PBO (<code>docs/experiments.md:126</code>); không reproduction entrypoint; không golden artifact; README license/status mâu thuẫn.</li>
+    <li>Optional asset: seam với C++ backtester tồn tại nhưng không có Python binding, không golden fixture hai phía (conformance = shim layer, không drop-in).</li>
+  </ul>
+</section>
+
+<section id="d">
+  <h2>D. 4–10 week execution path</h2>
+  <p>Một hard problem duy nhất (Phase 1), vertical slice nhỏ nhất đi hết vòng (Phase 2–4), rồi presentation (Phase 5). Không phải feature checklist.</p>
+
+  <div class="phase">
+    <span class="ph-label">Phase 1 — Hard technical problem (tuần 1–2)</span>
+    <h4>Out-of-sample validity dưới dữ liệu non-IID / nhãn overlap</h4>
+    <p>Đúng một problem: ước lượng hiệu năng backtest phải honest khi nhãn chồng lấn (overlap) và dữ liệu có phụ thuộc — tức là <strong>purged cross-validation (anti-leakage qua embargo gap) + walk-forward (out-of-sample protocol) + CSCV/PBO (multiple-testing control)</strong>, hoàn tất đúng phần mà docs hiện khai “deferred”. Bài toán có điểm ngọt: study hiện có (DSR-only) chính là baseline để chứng minh ước lượng naive khác bao nhiêu so với honest.</p>
+  </div>
+
+  <div class="phase">
+    <span class="ph-label">Phase 2 — Implementation (tuần 2–5)</span>
+    <h4>Smallest complete vertical slice</h4>
+    <ul class="tight">
+      <li>Module <code>src/quant_engine/validation/</code>: <code>walk_forward.py</code>, <code>purged_cv.py</code>, <code>cscv_pbo.py</code> — nối vào experiment runner sẵn có.</li>
+      <li>Entrypoint: <code>make reproduce</code> (Makefile hoặc <code>[project.scripts]</code>) → generate data seeded → strategy set → so sánh naive CV vs purged/walk-forward → bảng DSR/PBO → ghi <code>results/overfitting-study.json</code> + markdown.</li>
+      <li>DGP có chủ ý: dữ liệu synthetic với nhãn overlap/autocorrelation để purging thực sự tạo ra khác biệt (không thì Phase 1 vô nghĩa).</li>
+      <li>CI job: regenerate → diff với golden → fail on drift.</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <span class="ph-label">Phase 3 — Validation (tuần 5–7)</span>
+    <h4>Tests + experiments</h4>
+    <ul class="tight">
+      <li>Property tests (Hypothesis, hệ thống hiện có 9 file): purge gap không bao giờ để nhãn overlap lọt fold; embargo correctness.</li>
+      <li>Determinism test: 2 lần chạy → byte-identical output.</li>
+      <li>Experiment chính (đây là “result”): bảng naive-vs-purged/walk-forward divergence + diễn giải DSR/PBO — số liệu này là thành quả research của cycle.</li>
+      <li><em>Stretch (tùy chọn, không bắt buộc exit):</em> conformance với C++ backtester — shim vectorized↔event + golden corpus đầu tiên, chỉ khi Phase 1–2 đi đúng lịch.</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <span class="ph-label">Phase 4 — Proof artifact (tuần 7–8)</span>
+    <h4>Reviewer tự kiểm tra độc lập được</h4>
+    <ul class="tight">
+      <li><code>results/overfitting-study.json</code> + reproducibility gate trong CI (drift = đỏ).</li>
+      <li>Báo cáo <code>docs/research/overfitting-study.md</code> v2: số OOS, methodology, limitations — mọi số trong README sinh từ artifact.</li>
+      <li>Lệnh <code>make reproduce</code> chạy sạch từ clone mới — được verify trên 2 môi trường.</li>
+    </ul>
+  </div>
+
+  <div class="phase">
+    <span class="ph-label">Phase 5 — Public presentation (tuần 8–10)</span>
+    <h4>Evidence-rich README + phương pháp + giới hạn</h4>
+    <ul class="tight">
+      <li>README sự thật: chốt license (owner), status/Planned table khớp reality, bảng số sinh từ CI, reproducibility block, methodology + limitations.</li>
+      <li>Sơ đồ validation layer; link tới artifacts và báo cáo.</li>
+      <li>Gates còn thiếu bật lên: coverage gate (pytest-cov đã khai, CI chưa chạy).</li>
+    </ul>
+  </div>
+</section>
+
+<section id="e">
+  <h2>E. Supporting portfolio policy</h2>
+  <p>Không “freeze sáu”. Chính sách: <strong>1 flagship + 2 supporting + 4 maintenance/archive</strong>.</p>
+  <table>
+    <thead><tr><th>Vai trò</th><th>Repo</th><th>Định nghĩa &amp; phạm vi</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Flagship</strong></td>
+        <td>quant-research-engine</td>
+        <td>Phát triển chủ động, engineering/research sâu nhất, README/evidence mạnh nhất — toàn bộ cycle theo mục D.</td>
+      </tr>
+      <tr>
+        <td><strong>Supporting</strong></td>
+        <td>low-latency-cpp-backtester</td>
+        <td>Cải tiến có kiểm soát, chỉ khi củng cố portfolio: slice systems riêng (tick-level matching + measured latency methodology, 4–10 tuần, theo C3.1+C2 evidence) + publish benchmark số thật (thay placeholder README). Hỗ trợ trực tiếp QRE nếu làm conformance.</td>
+      </tr>
+      <tr>
+        <td><strong>Supporting</strong></td>
+        <td>smart-clock</td>
+        <td>Cải tiến có kiểm soát: bring-up + số đo power + demo video khi hardware sẵn. Nếu disconfirming #3 kích hoạt → promote lên flagship (thay QRE).</td>
+      </tr>
+      <tr>
+        <td><strong>Maintenance / archive</strong></td>
+        <td>french-exam-trainer, AI-DermDiag, school-heat-intelligence, repo2web</td>
+        <td>Chỉ fix bug/security. Không đua feature. Exam-trainer được ưu tiên cân nhắc lại nếu flagship đã ổn (momentum 31 commit không bị vứt bỏ — chỉ không dẫn cycle này).</td>
+      </tr>
+    </tbody>
+  </table>
+</section>
+
+<section id="f">
+  <h2>F. Repository hygiene prerequisites</h2>
+  <p>Các idea trước đây (README-as-build-artifact, QRE truth-up, declared-vs-enforced) là <strong>enabling work, không phải depth</strong> — giữ ở đây, không xếp trên flagship ranking.</p>
+  <ul class="tight">
+    <li><strong>QRE license truth-up</strong> — MIT (metadata) vs “Proprietary” (README:77): owner chốt 1. Blocking Phase 5. <span class="chip">prereq cho flagship</span></li>
+    <li><strong>QRE README truth-up + evidence-rich README</strong> — status “Phase 0” vs packages thật, Planned table vs 14–15 package, số sinh từ artifact, reproducibility block. <span class="chip">prereq cho flagship (Phase 5)</span></li>
+    <li><strong>QRE coverage gate</strong> — pytest-cov khai trong dev extras, CI chạy bare pytest. <span class="chip">prereq cho flagship</span></li>
+    <li><strong>Cross-repo CI gaps</strong> (khi nào repo đó được active): derm root-only pytest (3/17), repo2web black/ruff/mypy không chạy trong CI, heat không lint/type, backtester placeholder benchmark README, trainer playwright unwired, repo2web <code>assert True</code> placeholder.</li>
+    <li><strong>Cleanup</strong>: backtester 26 file build/ đang tracked trong git.</li>
+  </ul>
+</section>
+
+<section id="g">
+  <h2>G. Rejected ideas</h2>
+  <p>Giữ bằng chứng reject, đã gộp trùng lặp, loại nhiễu meta-methodology.</p>
+  <table>
+    <thead><tr><th>Idea (đã gộp)</th><th>Lý do rejected / phân loại lại</th></tr></thead>
+    <tbody>
+      <tr><td>“Pick the survivor” vì 2 repo quant overlap (A1)</td><td>Overlap không tự suy ra flagship — thay bằng matrix A.1; backtester fail “materially deeper” test</td></tr>
+      <tr><td>Publish benchmark number / README-as-build-artifact ×7 / evidence block ×7 / docs ladder (A2, B1, C3, C8, D5, E2, E7, X2)</td><td>Hygiene, không phải depth → chuyển vào F; ×7 scope bị flag từ trước; E2 “zero numbers” bị partial refuted</td></tr>
+      <tr><td>repo2web state-machine test / compatibility scorecard / gVisor postpone (A3, C5, E4, B6)</td><td>Repo không được promote (không có evidence mới); scorecard không trả lời “which to deepen”; metric chưa develop</td></tr>
+      <tr><td>Exam-trainer Phase 4/§22/test-ratio (A4, C4, D7, E3)</td><td>Scored 5.8 — migration tax + outcome evidence cần user; wiring Phase 4 thực ra nhỏ nên không phải depth problem</td></tr>
+      <tr><td>Smart-clock screenshot-factory từ simulator (B2, X4)</td><td><strong>Refuted by source</strong>: mock_hal <code>render()</code> = <code>{}</code> → không có pixel nào; không được “invent” path codebase không hỗ trợ</td></tr>
+      <tr><td>Smart-clock hardware bring-up (A5, C7, D6, E6)</td><td>Không rejected — chuyển thành runner-up #1 + supporting role (E); điều kiện promote ở B</td></tr>
+      <tr><td>Freeze sáu / pin một repo / FA-ify (A6, B7, E1, D1, D8, B3, C6, E5, X1)</td><td>Model “freeze sáu” bị thay bằng policy 1+2+4 (E); CI-gap fixes chuyển vào F; “decorative CI” bị refuted (mọi CI chạy test thật)</td></tr>
+      <tr><td>Quant convergence — shared L2 corpus + make reproduce (B5, C1, X3)</td><td>Không rejected trọn vẹn: <code>make reproduce</code> thành Phase 2 flagship; conformance hạ cấp xuống Phase 3 stretch (chỉ khi QRE thắng — nó thắng)</td></tr>
+      <tr><td>QRE README truth-up riêng (A7, C2)</td><td>Hygiene prereq → F</td></tr>
+      <tr><td>Confidence-routed auto-approval (B4)</td><td>Too narrow; “confidence routing” là invention không có basis → brainstorm variant nếu muốn</td></tr>
+      <tr><td>Vertical Slice / Thick Description / Vintages (D2, D3, D4)</td><td>Loại nhiễu meta-methodology — không có nội dung quyết định; D3/D4 còn meet-fail (evidence tự phản bác ở D4)</td></tr>
+      <tr><td>Deliberate-practice test-ratio / deliberate metrics (D7)</td><td>Duplicate axis F + repo flagship; thành sub-task nếu được chọn</td></tr>
+    </tbody>
+  </table>
+  <p>Axis coverage: 6/6 — không axis nào kết thúc với 0 survivor (strategic-fit định hình matrix; 5 axis còn lại phân bổ qua D/E/F).</p>
+</section>
+
+<section id="rec">
+  <h2>Recommendation</h2>
+
+  <h4>Recommended flagship</h4>
+  <p><strong><code>quant-research-engine</code></strong></p>
+
+  <h4>Why this repo</h4>
+  <ol class="tight">
+    <li><strong>Nền tảng vững nhất trong 7</strong>: CI chặt nhất (ruff + mypy strict + pytest), 11.3k test LOC (1.78×), property tests — depth xây trên đá cứng, không phải sửa nền trước (derm 4.5 / trainer 4.5 điểm foundation).</li>
+    <li><strong>Depth path verify chạy được ngay, 100% offline</strong>: pipeline seeded, DSR đã xong, gap OOS được chính docs thừa nhận (<code>experiments.md:126</code>) — hard problem xác định + có nơi đáp landing, không chờ hardware/GPU/data bên ngoài.</li>
+    <li><strong>Evidence chain CI-gateable</strong>: <code>make reproduce</code> byte-stable + drift gate = proof reviewer tự rerun — loại mạnh nhất cho bối cảnh review kỹ thuật.</li>
+    <li><strong>Điểm cao nhất 8.7</strong> theo đúng bộ trọng số đề xuất, thắng ở 3/6 axis kể cả strategic fit (tied 9).</li>
+    <li><strong>Depth tăng dần đọc được</strong>: DSR → OOS validation → (sau này) Systems A–D — câu chuyện “increasing technical depth”, không phải cộng feature.</li>
+  </ol>
+
+  <h4>Why not the two strongest alternatives</h4>
+  <ul class="tight">
+    <li><strong>smart-clock (8.0):</strong> phụ thuộc procurement hardware chưa verify (rủi ro bên ngoài duy nhất trong nhóm dẫn đầu), sim không thay thế được (render rỗng — verified), ceiling là engineering không research, foundation nhẹ hơn. Thắng QRE chỉ ở originality — và các ô thắng đều UNCERTAIN. Chuyển sang flagship chỉ khi hardware xác nhận trước tuần 2 + narrative embedded-first.</li>
+    <li><strong>AI-DermDiag (6.8):</strong> foundation yếu nhất nhóm nghiêm túc (CI chạy 3/17 test, không lint, ml/ zero test) + headline evidence bị chặn sau retrain GPU + bề mặt model commodity. Depth path (leakage + calibration) là thật và ngắn ngày nhất — nhưng xây trên đá mỏng nhất; chọn nó nếu narrative AI-first và GPU sẵn từ tuần 1.</li>
+  </ul>
+
+  <h4>Flagship thesis</h4>
+  <p>QRE trở nên mạnh hơn đáng kể bằng cách giải quyết out-of-sample validity (walk-forward + purged CV + CSCV/PBO), chứng minh mọi con số công bố tái tạo bằng một lệnh <code>make reproduce</code> chạy offline và được CI gate — biến Phase-0 repo có gap validation được thừa nhận thành research artifact reviewer tự rerun được.</p>
+
+  <h4>First 3 implementation milestones</h4>
+  <ol class="tight">
+    <li><strong>M1 — Reproduction entrypoint + golden artifact:</strong> <code>make reproduce</code> chạy study hiện có offline, ghi <code>results/overfitting-study.json</code>; CI regenerate + diff → xanh trên clone sạch. Đo được: 1 lệnh, 1 gate CI, output byte-stable.</li>
+    <li><strong>M2 — Validation module + leakage tests:</strong> <code>walk_forward</code> + <code>purged_cv</code> với property tests + unit test embargo (nhãn overlap không bao giờ xuyên fold); ruff + mypy strict pass. Đo được: module mới, test xanh trong CI.</li>
+    <li><strong>M3 — Study v2 với số OOS:</strong> bảng naive-vs-purged/walk-forward chạy trên strategy set; <code>overfitting-study.md</code> v2 có số OOS + limitations; mọi số trong README sinh từ artifact. Đo được: report có số OOS, README diff-check pass.</li>
+  </ol>
+
+  <h4>Exit criteria — “deepened thật sự” khi</h4>
+  <ul class="tight">
+    <li>Clone sạch + <code>make reproduce</code> tái tạo byte-identical mọi số công bố, trên ≥2 môi trường (CI + 1 local), gate reproducibility màu xanh.</li>
+    <li>Lớp validation hoàn chỉnh (walk-forward, purged CV, CSCV/PBO) với unit + property tests; coverage gate bật; mypy strict + ruff giữ nguyên.</li>
+    <li>Study v2 trình bày được 1 kết luận cụ thể: chênh lệch ước lượng naive vs honest + diễn giải DSR/PBO — một reviewer đọc được “result”.</li>
+    <li>Evidence-rich README: license/status sự thật, bảng số sinh từ artifact, methodology + limitations + reproducibility instructions.</li>
+  </ul>
+
+  <h4>Portfolio policy</h4>
+  <p><strong>1 flagship</strong> (quant-research-engine) <strong>+ 2 supporting</strong> (low-latency-cpp-backtester — tick-level + latency slice; smart-clock — bring-up + power demo khi hardware sẵn) <strong>+ 4 maintenance/archive</strong> (french-exam-trainer, AI-DermDiag, school-heat-intelligence, repo2web — chỉ bug/security).</p>
+</section>
+
+<footer class="composition-signal">
+  Composed 2026-10-03T09:42Z by ce-ideate from user prompt “revised flagship decision — evidence-backed recommendation, matrix, depth path”
+</footer>
+</main>
+</body>
+</html>

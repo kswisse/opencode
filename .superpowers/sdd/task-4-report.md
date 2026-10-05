@@ -1,45 +1,89 @@
-# Task 4: API Service — FastAPI Application
+# Task 4 Report: extract — HTML to content + content hash (TDD)
 
-## What I Implemented
+## What I implemented
 
-Created the complete FastAPI API service under `C:\Opencode\clipping-agent\apps\api\` with the following structure:
+- `webcrawler/tests/fixtures/sample_page.html` — brief Step 1 fixture verbatim.
+- `webcrawler/tests/test_extract.py` — 3 failing tests verbatim (brief Step 2).
+- `webcrawler/core/sources/__init__.py` — populated (was empty from Task 1) with `DiscoveredURL` and `ExtractedContent` dataclasses, verbatim brief Step 4.
+- `webcrawler/core/extract.py` — `content_hash(text)` (sha256 of whitespace-collapsed, lowercased text) and `extract(html, url, source) -> ExtractedContent | None` wrapping trafilatura, verbatim brief Step 4.
 
-- **pyproject.toml** — Project metadata with fastapi, uvicorn, websockets, and all clippy-* dependencies
-- **src/main.py** — FastAPI application with lifespan (DB init, storage init, NATS connect), CORS middleware, tenant middleware, and 4 router inclusions
-- **src/config.py** — Local config overrides placeholder
-- **src/routers/videos.py** — Upload URL generation, video confirmation, list videos, get video with pipeline steps
-- **src/routers/candidates.py** — List candidates by video, approve/reject candidates (creates ClipModel on approve)
-- **src/routers/clips.py** — List clips, get single clip
-- **src/routers/analytics.py** — Record analytics event, get analytics overview
-- **src/dependencies/db.py** — Async SQLAlchemy session dependency
-- **src/middleware/tenant.py** — Multi-tenant middleware with static tenant ID
-- All `__init__.py` files
+Interface note: the task-context prose says `extract(html, url) -> dict | None` with a `links` key, but the brief's code (which the task declares gospel: "COMPLETE test code and implementation code to use verbatim") specifies `extract(html, url, source) -> ExtractedContent | None` with no `links`. I followed the brief exactly. Task 6/7 must import the 3-arg form.
 
-## What I Tested
+## TDD Evidence
 
-1. **Import verification**: `python -c "from src.main import app; print(f'FastAPI: {app.title}')"` → ✅ `FastAPI: Clippy API`
-2. **Router registration**: Verified all 4 routers attached with correct prefixes (videos, candidates, clips, analytics)
-3. **OpenAPI schema**: All 11 endpoints confirmed via `app.openapi()`
-4. **All routers import correctly**: videos, candidates, clips, analytics all verified working
+### RED
 
-## Files Created (13 files)
+Command (from `C:\Opencode\webcrawler`):
 
-- `apps/api/pyproject.toml`
-- `apps/api/src/__init__.py`
-- `apps/api/src/main.py`
-- `apps/api/src/config.py`
-- `apps/api/src/routers/__init__.py`
-- `apps/api/src/routers/videos.py`
-- `apps/api/src/routers/candidates.py`
-- `apps/api/src/routers/clips.py`
-- `apps/api/src/routers/analytics.py`
-- `apps/api/src/dependencies/__init__.py`
-- `apps/api/src/dependencies/db.py`
-- `apps/api/src/middleware/__init__.py`
-- `apps/api/src/middleware/tenant.py`
+```
+python -m pytest tests/test_extract.py -q
+```
 
-## Notes
+Output:
 
-- Dockerfile NOT created (Docker unavailable per task instructions)
-- Skipped `pip install -e apps/api/` because hatchling fails without a `[tool.hatch.build.targets.wheel]` packages config; the app is designed to run directly via `uvicorn src.main:app` from the `apps/api/` directory, not as an installed package
-- No `[tool.hatch.build]` section in pyproject.toml per task requirement
+```
+=================================== ERRORS ====================================
+___________________________ ERROR collecting tests/test_extract.py ___________________________
+ImportError while importing test module 'C:\Opencode\webcrawler\tests\test_extract.py'.
+...
+tests\test_extract.py:3: in <module>
+    from core.extract import extract, content_hash
+E   ModuleNotFoundError: No module named 'core.extract'
+=========================== short test summary info ===========================
+ERROR tests/test_extract.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 1.36s
+```
+
+Why expected: brief Step 3 predicts exactly `ModuleNotFoundError: No module named 'core.extract'` — `core/extract.py` did not exist yet. Failure confirmed.
+
+### GREEN
+
+Command (from `C:\Opencode\webcrawler`), after implementing brief Step 4:
+
+```
+python -m pytest tests/test_extract.py -q
+```
+
+Output:
+
+```
+...                                                                      [100%]
+3 passed in 1.72s
+```
+
+Matches brief Step 5 prediction: `3 passed`.
+
+## Full-suite result
+
+```
+python -m pytest -q   # from C:\Opencode\webcrawler
+.............                                                            [100%]
+13 passed in 1.83s
+```
+
+**ACTUAL: 13 passed** (10 pre-existing + 3 new task-4 tests) — exactly the expected 10 + 3.
+
+## Files changed
+
+- `webcrawler/tests/fixtures/sample_page.html` (new)
+- `webcrawler/tests/test_extract.py` (new)
+- `webcrawler/core/sources/__init__.py` (modified — dataclasses added)
+- `webcrawler/core/extract.py` (new)
+
+## Commit
+
+- `6eeb361` `feat(webcrawler): extract via trafilatura + content hash` on `feature/webcrawler-phase1`, staged from `C:\Opencode` with only the 4 `webcrawler/` paths (verified: `4 files changed, 95 insertions(+)`).
+
+## Self-review findings
+
+- Code transcribed verbatim from brief Steps 1/2/4; no deviations, comments in English.
+- RED failure mode matches brief prediction exactly; GREEN count matches (3 passed).
+- Full suite green at 13; no regressions in `test_url_db.py` / `test_robots.py`.
+- Only the 4 intended `webcrawler/` paths staged; the repo's large unrelated dirty working tree (`.opencode/`, `ai-workforce-platform/`, etc.) was left untouched.
+
+## Concerns
+
+- **Brief vs. task-prose interface mismatch** (`dict` + `links` vs. `ExtractedContent` + `source` arg): brief wins per instructions, but Tasks 6/7 briefs must be checked for consistency before they import this function.
+- `trafilatura.extract` output for a given page can vary across trafilatura versions (metadata fields like `date`/`author` may be None); tests don't pin the version — acceptable for Phase 1 since tests only assert url/source/text/title.
+- Working tree contains many unrelated uncommitted changes; any future commit must keep staging scoped to `webcrawler/` paths.

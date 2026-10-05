@@ -1,48 +1,67 @@
-# Task 1: Project Scaffold + Docker Compose Infrastructure - Report
+# Task 1 Report: Project scaffold + dependencies
 
-## What I Implemented
+**Status:** DONE
+**Commit:** `b69036c` feat(webcrawler): scaffold project, deps, pytest
 
-Created the root project structure for the Clippy AI Clipping Agent SaaS under `C:\Opencode\clipping-agent\`.
+## What I implemented
 
-## Files Created
+Created the exact 7 files specified in the brief (no extras):
 
-1. **`clipping-agent/pyproject.toml`** — Ruff & mypy configuration for Python 3.12 (hatchling style)
-2. **`clipping-agent/.env.example`** — Environment variable template covering Infra, Storage, Temporal, LLM, and App settings
-3. **`clipping-agent/.gitignore`** — Standard Python/Node ignores (pycache, env, venv, node_modules, .next, dist, egg-info, pytest_cache)
-4. **`clipping-agent/docker-compose.infra.yml`** — 7 infrastructure services:
-   - PostgreSQL 16 Alpine (with healthcheck)
-   - Redis 7 Alpine (with healthcheck)
-   - MinIO (latest, with console on :9001, healthcheck)
-   - Qdrant (latest, with healthcheck)
-   - NATS (latest, with JetStream, healthcheck)
-   - Temporal (auto-setup, depends on postgres healthy)
-   - Temporal UI (depends on temporal)
-   - 3 named volumes: postgres_data, minio_data, qdrant_data
-5. **`clipping-agent/docker-compose.yml`** — Full stack with `include:` referencing infra, plus:
-   - API service (builds from apps/api/Dockerfile, port 8000, mounts ./apps/api/src and ./packages)
-   - Worker service (builds from apps/worker/Dockerfile, mounts ./apps/worker/src and ./packages)
-   - Frontend service (builds from apps/frontend/Dockerfile, port 3000, mounts ./apps/frontend/src)
-6. **`clipping-agent/Makefile`** — Targets: infra, up, down, build, test, lint
+- `webcrawler/requirements.txt` — feedparser>=6.0, trafilatura>=1.8, httpx>=0.27, pytest>=8.0 (verbatim)
+- `webcrawler/.gitignore` — data/, __pycache__/, *.pyc, .pytest_cache/ (verbatim)
+- `webcrawler/core/__init__.py` (empty)
+- `webcrawler/core/sources/__init__.py` (empty)
+- `webcrawler/tests/__init__.py` (empty)
+- `webcrawler/tests/fixtures/.gitkeep` (empty, keeps fixture dir)
+- `webcrawler/runners/__init__.py` (empty)
 
-## Verification
+## Commands run and actual output
 
-- All 6 files created and confirmed present via `Get-ChildItem`
-- Content verified for Makefile and docker-compose.infra.yml
-- Docker is **not installed** on this system, so Step 5 (Docker Compose up/ps) could not be executed. This is a known limitation of the development environment.
+**1. `pip install -r C:\Opencode\webcrawler\requirements.txt`** — succeeded:
 
-## Self-Review Findings
+```
+Successfully installed babel-2.18.0 courlan-1.4.0 dateparser-1.4.3 feedparser-6.0.14
+feedparser-sgmllib-2.1.0 htmldate-1.10.0 justext-3.0.2 lxml_html_clean-0.4.5
+pytz-2026.4 tld-0.13.2 trafilatura-2.2.0
+```
 
-- All files match the task brief specifications exactly
-- No deviations from the specified content
-- `.gitignore`, `.env.example`, `pyproject.toml`, both compose files, and Makefile complete
-- Missing: The Makefile uses Windows-incompatible paths (`apps/api && pytest` should be `apps/api; if ($?) { pytest }` on Windows PowerShell). The Makefile is designed for a Unix environment (docker compose). This is acceptable since Docker Compose targets Linux containers.
-- Docker not available for live infrastructure verification
+`httpx` (0.28.1) and `pytest` (9.1.1) were already satisfied in the system Python 3.12 site-packages. Installed into the SYSTEM environment as required (no venv).
 
-## Issues / Concerns
+**2. `python -m pytest -q`** (in `C:\Opencode\webcrawler`) — clean:
 
-- **Docker not available**: Step 5 cannot be verified on this machine. Requires Docker Desktop or equivalent.
-- **Windows compatibility**: Makefile targets use Unix shell syntax (`&&`, `cd`), which won't work in Windows PowerShell without WSL or Make for Windows. The project is clearly targeting a Docker/Linux environment so this is expected.
+```
+no tests ran in 0.54s
+```
 
-## Conclusion
+Matches expected `collected 0 items` / `no tests ran`.
 
-All files created successfully. Task is complete modulo Docker availability for Step 5 verification.
+**3. Import check:** `python -c "import core, core.sources, runners, tests"` → `imports ok`
+
+**4. Commit** (from repo root `C:\Opencode`):
+
+```
+git add webcrawler/requirements.txt webcrawler/.gitignore webcrawler/core webcrawler/runners webcrawler/tests
+git commit -m "feat(webcrawler): scaffold project, deps, pytest"
+[feature/webcrawler-phase1 b69036c] feat(webcrawler): scaffold project, deps, pytest
+ 7 files changed, 8 insertions(+)
+```
+
+## Files changed
+
+All new, all under `webcrawler/`: requirements.txt, .gitignore, core/\_\_init\_\_.py, core/sources/\_\_init\_\_.py, tests/\_\_init\_\_.py, tests/fixtures/.gitkeep, runners/\_\_init\_\_.py.
+
+Staged set verified with `git status --short -- webcrawler` — exactly these 7 files, nothing else. Unrelated dirty files in the repo were left untouched.
+
+## Self-review findings
+
+- Completeness: all 6 brief steps executed; file contents match the brief verbatim.
+- YAGNI: no extra files (no README, no conftest.py, no pyproject.toml) — only what the brief lists.
+- Test output pristine: pytest exits cleanly with "no tests ran", no warnings/errors.
+- Git: single commit on `feature/webcrawler-phase1`, paths prefixed `webcrawler/`, no non-webcrawler paths staged.
+
+## Issues or concerns
+
+Minor, non-blocking:
+
+- Git warned `LF will be replaced by CRLF` for `.gitignore` and `requirements.txt` (normal Windows `core.autocrlf` behavior; content unaffected).
+- Installed `feedparser` 6.0.14 / `trafilatura` 2.2.0 — newer than the plan's floor versions but within the `>=` spec.

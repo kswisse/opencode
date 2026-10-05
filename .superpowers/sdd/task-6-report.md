@@ -1,48 +1,78 @@
-# Task 6 Report: Frontend — Next.js Application Shell
+# Task 6 Report: Fetcher (TDD)
 
-## Status: DONE
+## What I implemented
 
-## Files Created
+- `webcrawler/tests/test_fetch.py` — 5 tests transcribed verbatim from brief Step 1 (success path, retry-then-succeed, retries-exhausted, robots short-circuit, non-2xx failure keeps status).
+- `webcrawler/core/fetch.py` — transcribed verbatim from brief Step 3:
+  - `FetchResult(ok, html, status, via)` dataclass
+  - `Fetcher(robots, limiter, transport=None, retries=3, backoff=1.5)` with `fetch(url) -> FetchResult`
+  - `default_transport` (scrapling-first when importable, httpx fallback), `_httpx_transport`, `_scrapling_transport`
+  - robots gate returns `FetchResult(False, "", 0, "robots")` before any transport call
+  - per-attempt `limiter.wait(domain)` (domain = `httpx.URL(url).host`), exponential-ish backoff `backoff * (attempt + 1)` between attempts
+  - success = `200 <= status < 300` **and** non-empty html; otherwise returns `(False, "", last_status, via)` after `retries` attempts
 
-### Config
-- `package.json` — Next.js 14, React 18, TanStack Query, Recharts, Tailwind CSS
-- `tsconfig.json` — TypeScript strict mode, `@/*` path alias to `./src/*`
-- `next.config.mjs` — standalone output, remote image patterns (note: renamed from .ts to .mjs)
-- `tailwind.config.ts` — dark theme with custom surface/border/accent colors
-- `postcss.config.js` — Tailwind + Autoprefixer
-- `Dockerfile` — multi-stage Node 20 Alpine build
+No other modules touched (robots/extract/store/url_db contract notes respected: `can_fetch`, `wait(domain)` used as-is).
 
-### Core App
-- `src/app/layout.tsx` — root layout with QueryProvider wrapper
-- `src/app/page.tsx` — redirects `/` → `/dashboard`
-- `src/app/globals.css` — Tailwind directives + CSS custom properties
-- `src/providers/query-provider.tsx` — TanStack Query client provider
+## TDD Evidence
 
-### Library
-- `src/lib/api-types.ts` — Video, PipelineStep, ClipCandidate, Clip, AnalyticsOverview, CreatorProfile
-- `src/lib/api.ts` — typed fetch wrapper with ApiError class
-- `src/lib/websocket.ts` — PipelineWebSocket with exponential backoff reconnection
+**RED** — `python -m pytest tests/test_fetch.py -q` (run from `C:\Opencode\webcrawler`):
 
-### UI Components
-- `src/components/ui/button.tsx` — Button with primary/secondary/danger/ghost variants
-- `src/components/ui/card.tsx` — Card, CardHeader, CardContent
-- `src/components/ui/badge.tsx` — Badge with default/success/warning/danger variants
-- `src/components/layout/sidebar.tsx` — Client-side sidebar with nav links and path-based active state
+```
+=================================== ERRORS ====================================
+____________________ ERROR collecting tests/test_fetch.py _____________________
+ImportError while importing test module 'C:\Opencode\webcrawler\tests\test_fetch.py'.
+...
+tests\test_fetch.py:2: in <module>
+    from core.fetch import Fetcher, FetchResult
+E   ModuleNotFoundError: No module named 'core.fetch'
+=========================== short test summary info ===========================
+ERROR tests/test_fetch.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.66s
+```
 
-### Dashboard Layout
-- `src/app/(dashboard)/layout.tsx` — Sidebar + main content area
-- `src/app/(dashboard)/page.tsx` — redirects `/dashboard` → `/dashboard/videos`
+Expected failure exactly as brief Step 2 predicted (`ModuleNotFoundError: No module named 'core.fetch'`) — tests written first, implementation did not exist yet.
 
-## Build Result
+**GREEN** — after creating `core/fetch.py`, same command:
 
-- **npm install:** 145 packages, no errors
-- **npm run build:** ✔ Compiled successfully, zero TypeScript errors, 4/4 static pages generated
+```
+.....                                                                    [100%]
+5 passed in 0.54s
+```
+
+Matches brief Step 4 prediction: `5 passed`.
+
+## Step 5 smoke test (real transport)
+
+`python -c "from core.fetch import default_transport; s,h=default_transport('https://example.com/'); print(s, len(h))"`
+
+```
+200 559
+```
+
+No exception; scrapling not installed → httpx fallback path (acceptable per brief). Tests themselves never touch the network (transport fully injected).
+
+## Files changed
+
+- `webcrawler/core/fetch.py` (new, +72)
+- `webcrawler/tests/test_fetch.py` (new, +44)
+
+## Full suite
+
+`python -m pytest -q` → **23 passed in 1.71s** (actual: 18 pre-existing + 5 new = 23; matches expectation).
+
+## Commit
+
+- `7eeeec8` `feat(webcrawler): fetcher with retries, robots gate, pluggable transport` — staged only `webcrawler/core/fetch.py` + `webcrawler/tests/test_fetch.py`, message exactly as brief Step 6 (Step 5 in task instructions). Working tree for `webcrawler/` clean after commit.
+
+## Self-review findings
+
+1. **Interface mismatch vs. my task-prompt context (BRIEF WINS):** the orchestrator's context paragraph described `Fetcher(robots, limiter, timeout=10.0)` with `.fetch(url, source)` that also does `save_raw`/`extract`/url_db-marking. The brief (my stated requirements, verbatim) specifies `transport/retries/backoff` and `fetch(url)` only — and Task 8's brief (`task-8-brief.md`) constructs `Fetcher(..., transport=transport, backoff=0.0)` and calls `fetcher.fetch(item.url)`, with the runner doing extract/save/mark itself. I followed the brief verbatim; the two are consistent with each other.
+2. `via` semantics: injected transport → `"transport"`, default transport → `"scrapling"` (no exception), exception → `"error"`, robots → `"robots"`. Task 8's runner only branches on `via == "robots"`, so this is safe.
+3. Non-2xx-but-2xx-like edge: html required in addition to status for success (e.g. a 200 with empty body retries, then fails with status 200) — brief behavior, tests cover empty body on 500/404 paths.
+4. Backoff sleeps `backoff*(attempt+1)` between attempts; all tests pass `backoff=0.0` so no test sleeps.
+5. `retries=0` would return `FetchResult(False, "", 0, "transport")` — not tested, not required by brief; harmless default never used.
 
 ## Concerns
 
-1. **next.config.ts → next.config.mjs:** Next.js 14 does not support `.ts` config files. Renamed to `.mjs`. This is the correct approach for Next.js 14; `.ts` config is supported from Next.js 15.
-2. **Standalone trace copy warning:** Non-fatal warning about missing `page_client-reference-manifest.js` for the redirect-only dashboard page. This is a known Next.js 14 edge case with standalone output and pages that produce no client-side JS (redirect-only pages). It does not affect the build or runtime.
-
-## Report File
-
-`C:\Opencode\.superpowers\sdd\task-6-report.md`
+- None blocking. Optional note for Task 8: if `runners/research_crawl.py` ever passes `transport=None` in unit tests it would hit the real network — Task 8's brief already injects `transport`, so fine.

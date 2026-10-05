@@ -1,0 +1,132 @@
+[vault]
+name = "Research Base"
+default_status = "draft"
+research_dir = "research"
+
+[search]
+title_weight = 10.0
+body_weight = 1.0
+tags_weight = 5.0
+aliases_weight = 3.0
+boost_evergreen = 1.5
+penalize_deprecated = 0.3
+penalize_stale = 0.7
+default_limit = 20
+chars_per_token = 4
+snippet_len = 200
+
+[web]
+provider = "crawl4ai"
+profile = ""
+magic = false
+
+[pipeline]
+profile = "full"
+
+[fetch]
+page_timeout_ms = 30000
+pdf_timeout_s = 30
+pdf_verify_tls = true
+min_pdf_bytes = 100
+max_html_bytes = 10485760
+max_pdf_bytes = 26214400
+max_image_bytes = 2097152
+allow_private_hosts = []
+wait_initial_ms = 2000
+poll_interval_ms = 500
+stable_checks = 2
+max_checks = 16
+image_timeout_s = 15
+visible_browser_domains = ["linkedin.com", "twitter.com", "x.com", "facebook.com", "instagram.com", "tiktok.com"]
+
+[junk]
+min_content_chars = 300
+login_wall_max_chars = 1000
+cookie_wall_max_chars = 1500
+binary_garbage_ratio = 0.05
+sample_window = 2000
+login_sample_chars = 500
+extra_login_signals = []
+extra_junk_signals = []
+
+[assets]
+max_images = 5
+min_image_bytes = 50000
+
+[dedup]
+shingle_size = 3
+minhash_perm = 128
+lsh_bands = 16
+lsh_switchover = 200
+default_threshold = 0.6
+
+[lint]
+extract_min_words = 150
+extract_coverage_divisor = 3
+stale_review_days = 90
+
+[ranking]
+w_tier = 0.35
+w_utility = 0.2
+w_authority = 0.25
+w_centrality = 0.2
+tier_ground_truth = 1.0
+tier_institutional = 0.85
+tier_practitioner = 0.7
+tier_commentary = 0.4
+tier_unknown = 0.6
+retraction_floor = 0.05
+api_cache_ttl_days = 30
+
+[embeddings]
+provider = "none"
+model = ""
+body_chars = 1500
+
+[chrome]
+enabled = true
+escalation_utility_threshold = 8.0
+max_items_per_run = 25
+drain_batch_size = 10
+scholar_enabled = true
+
+# Open-access full-text recovery.
+#
+# When a fetch lands a thin page carrying a DOI (a publisher abstract or
+# paywall interstitial), hyperresearch asks Unpaywall and Europe PMC for a
+# legal open-access copy and stores THAT text in the note body instead.
+#
+# The note's `source:` still points at the URL you asked for. The body may
+# come from somewhere else. Every such note says so in a banner at the top
+# of its body and in `oa_url` / `oa_source` / `oa_version` frontmatter.
+#
+# contact_email: REQUIRED by Unpaywall's terms of use. Leave it empty and
+# Unpaywall is skipped; Europe PMC needs no key, so recovery over its
+# open-access subset still works. Set the CORE_API_KEY environment variable
+# to add CORE, which covers every field and hosts full text directly.
+# oa_recovery = false disables everything.
+#
+# A recovered copy is only accepted if it is both longer than the page we
+# already had and long enough to clear oa_min_full_text_chars, so a
+# repository record page cannot pass for full text.
+#
+# oa_rescue_blocked also runs this when the source cannot be read at all —
+# a 403, a login wall, a bot wall. Those notes are made ENTIRELY of the
+# open-access copy: the title and authors did not come from the source URL
+# either. They are marked `oa_recovery_kind: rescued`. Set this to false if
+# you would rather have no note than a note built from a substitute.
+[scholar]
+oa_recovery = true
+contact_email = ""
+oa_min_full_text_chars = 6000
+oa_prefer_published = true
+oa_max_attempts = 3
+oa_rescue_blocked = true
+
+[sync]
+auto_sync = true
+exclude_patterns = [".hyperresearch/*", "exports/*", ".git/*", ".venv/*", "node_modules/*", "templates/*", "CLAUDE.md", "AGENTS.md", "agents.md", "GEMINI.md", "README.md", "CHANGELOG.md"]
+
+[index]
+auto_build = true
+pages = ["_index", "_tags", "_recent", "_orphans", "_stats"]

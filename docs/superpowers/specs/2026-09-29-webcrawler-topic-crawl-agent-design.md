@@ -95,7 +95,7 @@ python runners\topic_crawl.py --topic "RAG architecture" --max 300 [--lang vi] [
 | ddgs rate-limit / fail | thử lại 2× → nếu vẫn fail, nhận seed từ `--seeds file.txt` (đã có pattern trong research_crawl) |
 | Trang fetch fail/403 | retry 2× → đánh dấu `failed/blocked` trong url_db, bỏ qua, tiếp tục |
 | Gemini 429/quota | exponential backoff 1 lần → vẫn fail → fallback BM25-only, ghi `gemini_used: false` vào manifest |
-| Không có trang nào qua ranking | ghi `warnings` vào manifest (đề nghị hạ `--min-score` hoặc broaden topic); agent báo người dùng thay vì tự retry im lặng |
+| Không có trang nào qua BM25 | hạ ngưỡng BM25 1 lần, warning; nếu vẫn 0 → báo người dùng prompt quá hẹp |
 | Crash giữa chừng | resume qua url_db status (WAL) |
 
 ## 7. Testing

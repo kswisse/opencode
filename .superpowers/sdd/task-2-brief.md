@@ -1,365 +1,179 @@
-# Task 2: Shared Models Package
+﻿### Task 2: url_db â€” shared URL registry (TDD)
 
 **Files:**
-- Create: `packages/shared-models/pyproject.toml`
-- Create: `packages/shared-models/src/__init__.py`
-- Create: `packages/shared-models/src/models/__init__.py`
-- Create: `packages/shared-models/src/models/video.py`
-- Create: `packages/shared-models/src/models/clip.py`
-- Create: `packages/shared-models/src/models/transcript.py`
-- Create: `packages/shared-models/src/models/segment.py`
-- Create: `packages/shared-models/src/models/analysis.py`
-- Create: `packages/shared-models/src/models/scoring.py`
-- Create: `packages/shared-models/src/models/profile.py`
-- Create: `packages/shared-models/src/events.py`
+- Create: `webcrawler/core/url_db.py`
+- Test: `webcrawler/tests/test_url_db.py`
 
 **Interfaces:**
-- Consumes: (nothing — first package)
-- Produces: All Pydantic models consumed by API, Worker, and Frontend
+- Consumes: nothing.
+- Produces (Task 6/8 rely on these exact names):
+  - `UrlDb(path: str | Path)` with methods:
+    - `is_fetchable(url: str, now: str | None = None) -> bool`
+    - `mark_discovered(url: str, source: str, domain: str) -> None`
+    - `mark(url: str, status: str, content_hash: str | None = None, next_retry: str | None = None) -> None`
+    - `has_content(content_hash: str) -> bool`
+    - `add_run(runner: str, started_at: str, stats_json: str) -> None`
+    - `close() -> None`
+  - status values: `'fetched' | 'failed' | 'blocked'`
 
-## All File Contents
+- [ ] **Step 1: Write failing tests**
 
-### packages/shared-models/pyproject.toml
-```toml
-[project]
-name = "clippy-models"
-version = "0.1.0"
-requires-python = ">=3.12"
-dependencies = [
-    "pydantic>=2.0",
-    "pydantic-settings>=2.0",
-]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
-[tool.hatch.build]
-packages = ["src"]
-```
-
-### packages/shared-models/src/models/video.py
 ```python
-from datetime import datetime
-from enum import Enum
-from pydantic import BaseModel, Field
-from uuid import UUID, uuid4
+# tests/test_url_db.py
+from core.url_db import UrlDb
 
+def make_db(tmp_path):
+    return UrlDb(tmp_path / "url_db.sqlite")
 
-class SourceType(str, Enum):
-    YOUTUBE = "youtube"
-    TWITCH = "twitch"
-    PODCAST = "podcast"
-    LOCAL = "local"
+def test_new_url_not_fetchable_before_mark_then_fetchable(tmp_path):
+    db = make_db(tmp_path)
+    assert db.is_fetchable("https://a.com/1") is True
+    db.mark_discovered("https://a.com/1", "news", "a.com")
+    assert db.is_fetchable("https://a.com/1") is True
+    db.mark("https://a.com/1", "fetched")
+    assert db.is_fetchable("https://a.com/1") is False
+    db.close()
 
+def test_failed_url_blocked_until_next_retry(tmp_path):
+    db = make_db(tmp_path)
+    db.mark_discovered("https://a.com/2", "news", "a.com")
+    db.mark("https://a.com/2", "failed", next_retry="2026-09-27T00:00:00+00:00")
+    assert db.is_fetchable("https://a.com/2", now="2026-09-26T00:00:00+00:00") is False
+    assert db.is_fetchable("https://a.com/2", now="2026-09-27T01:00:00+00:00") is True
+    db.close()
 
-class VideoStatus(str, Enum):
-    PENDING = "pending"
-    DOWNLOADING = "downloading"
-    PROCESSING = "processing"
-    READY = "ready"
-    FAILED = "failed"
+def test_blocked_never_fetchable(tmp_path):
+    db = make_db(tmp_path)
+    db.mark_discovered("https://a.com/3", "news", "a.com")
+    db.mark("https://a.com/3", "blocked")
+    assert db.is_fetchable("https://a.com/3", now="2099-01-01T00:00:00+00:00") is False
+    db.close()
 
+def test_content_hash_dedup(tmp_path):
+    db = make_db(tmp_path)
+    assert db.has_content("abc123") is False
+    db.mark_discovered("https://a.com/4", "news", "a.com")
+    db.mark("https://a.com/4", "fetched", content_hash="abc123")
+    assert db.has_content("abc123") is True
+    db.close()
 
-class PipelineStepName(str, Enum):
-    DOWNLOAD = "download"
-    TRANSCRIBE = "transcribe"
-    ANALYZE = "analyze"
-    SCORE = "score"
-    GENERATE = "generate"
-    DONE = "done"
-
-
-class Video(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
-    tenant_id: UUID
-    title: str = ""
-    source_type: SourceType
-    source_url: str | None = None
-    status: VideoStatus = VideoStatus.PENDING
-    storage_key: str | None = None
-    thumbnail_key: str | None = None
-    duration_seconds: float | None = None
-    file_size_bytes: int | None = None
-    metadata: dict = {}
-    error_message: str | None = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-
-
-class VideoCreateResponse(BaseModel):
-    id: UUID
-    upload_url: str | None = None
-    upload_fields: dict | None = None
-
-
-class VideoConfirmRequest(BaseModel):
-    storage_key: str
-    source_type: SourceType
-    source_url: str | None = None
-    metadata: dict = {}
-
-
-class VideoListResponse(BaseModel):
-    videos: list[Video]
-    total: int
+def test_double_discover_keeps_single_row(tmp_path):
+    db = make_db(tmp_path)
+    db.mark_discovered("https://a.com/5", "news", "a.com")
+    db.mark_discovered("https://a.com/5", "serp", "a.com")
+    cur = db.conn.execute("SELECT COUNT(*) FROM urls WHERE url=?", ("https://a.com/5",))
+    assert cur.fetchone()[0] == 1
+    db.close()
 ```
 
-### packages/shared-models/src/models/clip.py
+- [ ] **Step 2: Run tests to verify failure**
+
+Run: `python -m pytest tests/test_url_db.py -q`
+Expected: FAIL with `ModuleNotFoundError: No module named 'core.url_db'`.
+
+- [ ] **Step 3: Implement core/url_db.py**
+
 ```python
-from datetime import datetime
-from enum import Enum
-from pydantic import BaseModel, Field
-from uuid import UUID, uuid4
+# core/url_db.py
+import sqlite3
+from datetime import datetime, timezone
+from pathlib import Path
+
+SCHEMA = """
+CREATE TABLE IF NOT EXISTS urls (
+  url TEXT PRIMARY KEY,
+  source TEXT,
+  status TEXT DEFAULT 'pending',
+  content_hash TEXT,
+  first_seen TEXT,
+  last_crawled TEXT,
+  next_retry TEXT,
+  domain TEXT
+);
+CREATE TABLE IF NOT EXISTS runs (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  runner TEXT,
+  started_at TEXT,
+  finished_at TEXT,
+  stats_json TEXT
+);
+"""
 
 
-class ClipCandidateStatus(str, Enum):
-    PROPOSED = "proposed"
-    APPROVED = "approved"
-    REJECTED = "rejected"
-    GENERATED = "generated"
+def _utcnow() -> str:
+    return datetime.now(timezone.utc).isoformat()
 
 
-class ScoreSet(BaseModel):
-    virality: float = 0.0
-    retention: float = 0.0
-    hook: float = 0.0
-    emotion: float = 0.0
-    shareability: float = 0.0
-    educational: float = 0.0
+class UrlDb:
+    def __init__(self, path):
+        self.conn = sqlite3.connect(str(path))
+        self.conn.execute("PRAGMA journal_mode=WAL")
+        self.conn.executescript(SCHEMA)
 
+    def is_fetchable(self, url: str, now: str | None = None) -> bool:
+        now = now or _utcnow()
+        row = self.conn.execute(
+            "SELECT status, next_retry FROM urls WHERE url=?", (url,)
+        ).fetchone()
+        if row is None:
+            return True
+        status, next_retry = row
+        if status == "fetched":
+            return False
+        if status == "blocked":
+            return False
+        if status == "failed" and next_retry and next_retry > now:
+            return False
+        return True
 
-class ClipCandidate(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
-    video_id: UUID
-    segment_ids: list[UUID] = []
-    start_time: float
-    end_time: float
-    summary: str = ""
-    scores: ScoreSet = Field(default_factory=ScoreSet)
-    predicted_score: float = 0.0
-    actual_score: float | None = None
-    status: ClipCandidateStatus = ClipCandidateStatus.PROPOSED
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    def mark_discovered(self, url: str, source: str, domain: str) -> None:
+        self.conn.execute(
+            "INSERT OR IGNORE INTO urls (url, source, first_seen, domain) VALUES (?, ?, ?, ?)",
+            (url, source, _utcnow(), domain),
+        )
+        self.conn.commit()
 
+    def mark(self, url: str, status: str, content_hash: str | None = None,
+             next_retry: str | None = None) -> None:
+        now = _utcnow()
+        self.conn.execute(
+            "UPDATE urls SET status=?, content_hash=?, "
+            "last_crawled=CASE WHEN ?='fetched' THEN ? ELSE last_crawled END, "
+            "next_retry=? WHERE url=?",
+            (status, content_hash, status, now, next_retry, url),
+        )
+        self.conn.commit()
 
-class Clip(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
-    candidate_id: UUID
-    video_id: UUID
-    storage_key: str
-    subtitle_key: str | None = None
-    duration_seconds: float | None = None
-    subtitle_style: str = "default"
-    file_format: str = "mp4"
-    resolution: str = "1080x1920"
-    thumbnail_url: str | None = None
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+    def has_content(self, content_hash: str) -> bool:
+        row = self.conn.execute(
+            "SELECT 1 FROM urls WHERE content_hash=? AND status='fetched' LIMIT 1",
+            (content_hash,),
+        ).fetchone()
+        return row is not None
+
+    def add_run(self, runner: str, started_at: str, stats_json: str) -> None:
+        self.conn.execute(
+            "INSERT INTO runs (runner, started_at, finished_at, stats_json) VALUES (?, ?, ?, ?)",
+            (runner, started_at, _utcnow(), stats_json),
+        )
+        self.conn.commit()
+
+    def close(self) -> None:
+        self.conn.close()
 ```
 
-### packages/shared-models/src/models/transcript.py
-```python
-from datetime import datetime
-from pydantic import BaseModel, Field
-from uuid import UUID, uuid4
+- [ ] **Step 4: Run tests to verify pass**
 
+Run: `python -m pytest tests/test_url_db.py -q`
+Expected: `5 passed`.
 
-class TranscriptSegment(BaseModel):
-    start: float
-    end: float
-    text: str
-    speaker_id: str | None = None
-    confidence: float = 0.0
+- [ ] **Step 5: Commit**
 
-
-class Transcript(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
-    video_id: UUID
-    language: str | None = None
-    segments: list[TranscriptSegment] = []
-    raw_output: dict = {}
-    created_at: datetime = Field(default_factory=datetime.utcnow)
+```powershell
+git add webcrawler/core/url_db.py webcrawler/tests/test_url_db.py
+git commit -m "feat(webcrawler): url_db shared registry with dedup + retry states"
 ```
 
-### packages/shared-models/src/models/segment.py
-```python
-from datetime import datetime
-from pydantic import BaseModel, Field
-from uuid import UUID, uuid4
+---
 
 
-class SceneBoundary(BaseModel):
-    start: float
-    end: float
-    label: str = ""
-
-
-class SpeakerSegment(BaseModel):
-    speaker_id: str
-    start: float
-    end: float
-
-
-class ConversationSegment(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
-    video_id: UUID
-    start_time: float
-    end_time: float
-    text: str
-    speaker_id: str | None = None
-    segment_type: str | None = None
-    context: dict = {}
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-```
-
-### packages/shared-models/src/models/analysis.py
-```python
-from datetime import datetime
-from pydantic import BaseModel, Field
-from uuid import UUID, uuid4
-
-
-class Signal(BaseModel):
-    type: str  # controversial, surprise, punchline, educational, etc.
-    confidence: float
-    detail: str = ""
-
-
-class AnalysisResult(BaseModel):
-    id: UUID = Field(default_factory=uuid4)
-    segment_id: UUID
-    model: str = ""
-    signals: list[Signal] = []
-    embedding: list[float] = []
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-```
-
-### packages/shared-models/src/models/scoring.py
-```python
-from pydantic import BaseModel
-
-
-class ScoringWeights(BaseModel):
-    virality: float = 1.0
-    retention: float = 0.9
-    hook: float = 0.8
-    emotion: float = 0.7
-    shareability: float = 0.6
-    educational: float = 0.4
-
-
-class LearningInsight(BaseModel):
-    signal_type: str
-    weight_before: float
-    weight_after: float
-    delta: float
-    confidence: float
-```
-
-### packages/shared-models/src/models/profile.py
-```python
-from pydantic import BaseModel, Field
-from uuid import UUID
-
-
-class BrandColors(BaseModel):
-    primary: str = "#3b82f6"
-    secondary: str = "#1e40af"
-
-
-class SubtitleStyle(BaseModel):
-    font: str = "Inter"
-    color: str = "#ffffff"
-    position: str = "bottom"
-    background_opacity: float = 0.5
-
-
-class AutoEditPreferences(BaseModel):
-    zoom_style: str = "static"
-    background_blur: bool = False
-    silence_removal: bool = True
-
-
-class CreatorProfile(BaseModel):
-    id: UUID
-    name: str = ""
-    brand_colors: BrandColors = Field(default_factory=BrandColors)
-    subtitle_style: SubtitleStyle = Field(default_factory=SubtitleStyle)
-    preferred_duration: int = 60
-    auto_edit_preferences: AutoEditPreferences = Field(default_factory=AutoEditPreferences)
-```
-
-### packages/shared-models/src/events.py
-```python
-from pydantic import BaseModel
-from uuid import UUID
-from datetime import datetime
-
-
-class PipelineEvent(BaseModel):
-    event_type: str
-    video_id: UUID
-    tenant_id: UUID
-    step_name: str | None = None
-    step_status: str | None = None
-    error_message: str | None = None
-    timestamp: datetime = datetime.utcnow()
-
-
-class ClipEvent(BaseModel):
-    event_type: str
-    clip_id: UUID
-    video_id: UUID
-    tenant_id: UUID
-    platform: str | None = None
-    timestamp: datetime = datetime.utcnow()
-```
-
-### packages/shared-models/src/models/__init__.py
-```python
-from .video import Video, VideoCreateResponse, VideoConfirmRequest, VideoListResponse, SourceType, VideoStatus, PipelineStepName
-from .clip import Clip, ClipCandidate, ScoreSet, ClipCandidateStatus
-from .transcript import Transcript, TranscriptSegment
-from .segment import ConversationSegment, SceneBoundary, SpeakerSegment
-from .analysis import AnalysisResult, Signal
-from .scoring import ScoringWeights, LearningInsight
-from .profile import CreatorProfile, BrandColors, SubtitleStyle, AutoEditPreferences
-```
-
-### packages/shared-models/src/__init__.py
-```python
-from .models.video import Video, VideoCreateResponse, VideoConfirmRequest, VideoListResponse, SourceType, VideoStatus, PipelineStepName
-from .models.clip import Clip, ClipCandidate, ScoreSet, ClipCandidateStatus
-from .models.transcript import Transcript, TranscriptSegment
-from .models.segment import ConversationSegment, SceneBoundary, SpeakerSegment
-from .models.analysis import AnalysisResult, Signal
-from .models.scoring import ScoringWeights, LearningInsight
-from .models.profile import CreatorProfile, BrandColors, SubtitleStyle, AutoEditPreferences
-from .events import PipelineEvent, ClipEvent
-
-__all__ = [
-    "Video", "VideoCreateResponse", "VideoConfirmRequest", "VideoListResponse",
-    "SourceType", "VideoStatus", "PipelineStepName",
-    "Clip", "ClipCandidate", "ScoreSet", "ClipCandidateStatus",
-    "Transcript", "TranscriptSegment",
-    "ConversationSegment", "SceneBoundary", "SpeakerSegment",
-    "AnalysisResult", "Signal",
-    "ScoringWeights", "LearningInsight",
-    "CreatorProfile", "BrandColors", "SubtitleStyle", "AutoEditPreferences",
-    "PipelineEvent", "ClipEvent",
-]
-```
-
-## Steps
-
-- [ ] Step 1: Create all the files listed above under `C:\Opencode\clipping-agent\packages\shared-models\`
-- [ ] Step 2: Install the package and verify imports work
-- [ ] Step 3: Self-review
-
-Run: `cd C:\Opencode\clipping-agent\packages\shared-models && pip install -e . && python -c "from clippy_models import Video; print(Video(tenant_id='00000000-0000-0000-0000-000000000001', source_type='youtube'))"`
-
-## Global Constraints
-
-- All Python packages use `pyproject.toml` (hatchling), no `setup.py`
-- Every Python app/package has `src/` layout
-- All Pydantic models use v2 style (model_validator/field_validator where applicable)

@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QRE OOS Validity Depth Cycle — Plan</title>
+<style>
+  :root {
+    --ink: #1a1d23;
+    --muted: #5c6470;
+    --line: #d8dce3;
+    --bg: #ffffff;
+    --panel: #f5f7fa;
+    --accent: #1f4fd8;
+    --ok: #17643a;
+    --warn: #8a5a00;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0 auto;
+    max-width: 940px;
+    padding: 32px 24px 64px;
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--ink);
+    background: var(--bg);
+  }
+  header { border-bottom: 3px solid var(--ink); padding-bottom: 16px; margin-bottom: 8px; }
+  h1 { font-size: 26px; line-height: 1.25; margin: 0 0 14px; }
+  h2 {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 20px;
+    margin: 40px 0 10px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  h3 {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 16px;
+    margin: 26px 0 8px;
+    color: var(--ink);
+  }
+  dl.meta {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 2px 16px;
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 13px;
+    margin: 0 0 14px;
+  }
+  dl.meta dt { color: var(--muted); }
+  dl.meta dd { margin: 0; }
+  ul.stats {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0;
+    margin: 0 0 12px;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12px;
+  }
+  ul.stats li {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 3px 9px;
+    color: var(--muted);
+  }
+  nav.toc {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+  }
+  nav.toc a { color: var(--accent); text-decoration: none; margin-right: 14px; }
+  nav.toc a:hover { text-decoration: underline; }
+  .capsule {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--accent);
+    padding: 14px 18px;
+    margin: 12px 0;
+  }
+  .capsule p { margin: 6px 0; }
+  .rid {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 13px;
+    font-weight: bold;
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .kd {
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 10px 14px;
+    margin: 10px 0;
+  }
+  .kd .kd-head { font-family: Arial, Helvetica, sans-serif; font-weight: bold; font-size: 15px; }
+  .kd .governs {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+  .badge {
+    display: inline-block;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 11px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--muted);
+    border-radius: 3px;
+    padding: 1px 7px;
+    margin-left: 8px;
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+  .badge.directed { border-color: var(--accent); color: var(--accent); }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13.5px;
+    margin: 12px 0;
+  }
+  th, td { border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top; }
+  th { background: var(--panel); }
+  td.num { text-align: right; font-family: Consolas, "Courier New", monospace; }
+  .fig {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    padding: 12px;
+    margin: 14px 0;
+    overflow-x: auto;
+  }
+  .fig .cap {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-top: 8px;
+  }
+  .flowlist {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 13.5px;
+    color: var(--muted);
+    margin: 6px 0 0;
+  }
+  code, .mono {
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 0.92em;
+    background: var(--panel);
+    padding: 0 4px;
+    border-radius: 2px;
+  }
+  a { color: var(--accent); }
+  .req-group { margin-top: 18px; }
+  .req-group > h4 {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 14.5px;
+    margin: 0 0 6px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  ul.reqs { list-style: none; padding: 0; margin: 0; }
+  ul.reqs li { padding: 7px 0; border-bottom: 1px dotted var(--line); }
+  ul.reqs li:last-child { border-bottom: none; }
+  .fc { border-left: 3px solid var(--warn); padding-left: 12px; margin: 8px 0; }
+  .ae { border-left: 3px solid var(--ok); padding-left: 12px; margin: 8px 0; }
+  footer.compose {
+    margin-top: 48px;
+    padding-top: 10px;
+    border-top: 1px solid var(--line);
+    font-family: Consolas, "Courier New", monospace;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .phase td:first-child { font-family: Consolas, "Courier New", monospace; white-space: nowrap; }
+  .cut { color: var(--warn); font-weight: bold; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>QRE OOS Validity Depth Cycle — Plan</h1>
+  <dl class="meta">
+    <dt>Artifact type</dt><dd>plan</dd>
+    <dt>Artifact contract</dt><dd>ce-unified-plan/v1</dd>
+    <dt>Product contract source</dt><dd>ce-brainstorm</dd>
+    <dt>Execution</dt><dd>code</dd>
+    <dt>Type</dt><dd>feat</dd>
+    <dt>Date</dt><dd>2026-10-05</dd>
+    <dt>Topic</dt><dd>qre-oos-validity-depth</dd>
+    <dt>Scope</dt><dd>repo quant-research-engine (master, github.com/kswisse/quant-research-engine)</dd>
+  </dl>
+  <ul class="stats">
+    <li>15 requirements</li>
+    <li>6 delivery phases (6–10 tuần)</li>
+    <li>5 falsification conditions</li>
+    <li>Matrix: 3 thesis → 8.8 / 7.0 / 6.0</li>
+  </ul>
+  <nav class="toc">
+    <a href="#goal-capsule">Goal Capsule</a>
+    <a href="#product-contract">Product Contract</a>
+  </nav>
+</header>
+
+<section id="goal-capsule">
+  <h2>Goal Capsule</h2>
+  <div class="capsule">
+    <p><strong>Objective:</strong> một reviewer bên ngoài tự rerun được một kết luận research của QRE — lớp OOS-validity hoàn chỉnh chứng minh được chênh lệch naive-vs-honest trên study đã predeclare, và mọi con số công bố tái tạo byte-identical qua CI gate.</p>
+    <p><strong>Means:</strong> depth thesis đã chọn (OOS validity layer: purged K-fold + embargo, walk-forward, CSCV/PBO — cộng study selection-inflation và reproduce/CI), cycle 6–10 tuần, chỉ trong repo <code>quant-research-engine</code>.</p>
+    <p><strong>Product authority:</strong> owner (kswisse). Scope = <code>quant-research-engine</code>; các repo khác trong portfolio (Systems A/B/C từ ideation 2026-10-03) nằm ngoài plan này.</p>
+    <p><strong>Open blockers:</strong></p>
+    <ul>
+      <li>License: README khai <code>Proprietary</code> (<code>README.md:7</code>) nhưng repo không có LICENSE file — owner phải chốt trước khi evidence công ra ngoài (Phase 5).</li>
+      <li>Baseline lint còn 91 lỗi ruff — phải về 0 trước khi lint gate đầu tiên bật (R13).</li>
+      <li>Fixture thật phụ thuộc provider API còn sống lúc fetch đúng một lần — fallback qua FC4.</li>
+      <li><code>master</code> hiện ahead 3 / behind 2 so với origin kèm working-tree WIP — thứ tự commit/push cần chốt trước khi tạo CI (Phase 4).</li>
+    </ul>
+  </div>
+</section>
+
+<section id="product-contract">
+  <h2>Product Contract</h2>
+
+  <h3>Summary</h3>
+  <p>Thêm một lớp OOS-validity (purged K-fold + embargo, walk-forward anchored, CSCV/PBO) vào <code>quant-research-engine</code>, dùng nó để chạy study selection-inflation đã predeclare trên synthetic DGP + fixture thật nhỏ, rồi khoá mọi con số bằng một lệnh reproduce byte-identical và CI drift-gate. Kết quả cuối: một claim naive-vs-honest có artifact, có test, có bằng chứng tái tạo.</p>
+
+  <h3>Problem Frame</h3>
+  <ul>
+    <li>Repo tự khai khoảng trống: <code>docs/experiments.md:111-113</code> ghi walk-forward / purged CV / CSCV-PBO "Not implemented yet", và <code>src/</code> đúng là 0 code CV/OOS — trong khi DSR/PSR <em>đã</em> có (<code>src/quant_engine/statistics/dsr.py</code>, <code>psr.py</code>) nhưng docs vẫn nói chưa implement (stale).</li>
+    <li>Kết quả hiện tại là in-sample: <code>engine.py:64</code> <code>cost_assumption="zero_cost"</code>, <code>engine.py:120-124</code> zero costs + <code>shift(1)</code> 1-period — không có protocol nào tách train/test, nên Sharpe best-of-N không có đường kiểm chứng OOS.</li>
+    <li>Không gì tái tạo được: CI = 0 (không <code>.github/**</code>), không Makefile/lockfile/golden artifact, <code>data/</code> trống (chỉ <code>.gitkeep</code>), coverage gate chưa bật. <code>ruff check</code> hiện 91 lỗi (AGENTS.md ghi 3 — stale); README "Phase 0" vs AGENTS "Phase 2.8".</li>
+    <li>Điểm 8.7 của ideation 2026-10-03 là portfolio scoring, không phải bằng chứng repo — plan này chuyển sang bằng chứng đã verify (12/12 claim).</li>
+    <li>Hệ quả: reviewer không thể tự kiểm chứng bất kỳ claim nào của repo. Đó là lý do depth cycle này tồn tại.</li>
+  </ul>
+
+  <h3>Key Decisions</h3>
+
+  <div class="kd">
+    <div class="kd-head">KD1 — Depth thesis = OOS validity layer + selection-inflation study <span class="badge">session-settled: user-approved</span></div>
+    <p>Chọn qua decision matrix (brief giao trọng số) thay vì hai hướng còn lại. Weighted totals từ phase 2.4 của brainstorm này:</p>
+    <div class="fig">
+      <table>
+        <tr>
+          <th>Candidate</th>
+          <th class="num">Weighted (0–10)</th>
+          <th>Cơ sở điểm (repo evidence đã verify)</th>
+          <th>Verdict</th>
+        </tr>
+        <tr>
+          <td><strong>T1 — OOS validity + inflation study</strong></td>
+          <td class="num"><strong>8.8</strong></td>
+          <td>Gap tự khai trong <code>experiments.md</code>, DSR/PSR đã có để so trước/sau, strategy grid sẵn — RL/EQ cao nhất</td>
+          <td>Chọn</td>
+        </tr>
+        <tr>
+          <td>T2 — byte-stable repro</td>
+          <td class="num">7.0</td>
+          <td>Đo lường được nhưng không trả lời câu hỏi research — IR/IF thấp hơn T1</td>
+          <td>Absorb thành Phase 4 enabler</td>
+        </tr>
+        <tr>
+          <td>T3 — cost-aware backtest</td>
+          <td class="num">6.0</td>
+          <td>Chưa có dữ liệu cost thật trong repo (engine zero-cost) — VR yếu nhất</td>
+          <td>Parked (KD4)</td>
+        </tr>
+      </table>
+      <div class="cap" style="font-family:Arial;font-size:12.5px;color:#5c6470;">Thang trọng số brief giao: RD 25 · VR 25 · RL 15 · EQ 15 · IF 10 · PD 10 — tổng weighted từ phase 2.4 của brainstorm (chấm từ claim đã verify 12/12, không xài điểm 8.7 của ideation).</div>
+      <svg viewBox="0 0 640 150" width="100%" height="150" role="img" aria-label="Weighted totals: Thesis 1 = 8.8, Thesis 2 = 7.0, Thesis 3 = 6.0">
+        <text x="8" y="30" font-family="Arial" font-size="13" fill="#1a1d23">T1 OOS validity</text>
+        <rect x="170" y="16" width="440" height="20" fill="#1f4fd8"></rect>
+        <text x="618" y="31" font-family="Consolas" font-size="13" fill="#1a1d23">8.8</text>
+        <text x="8" y="78" font-family="Arial" font-size="13" fill="#1a1d23">T2 byte-stable repro</text>
+        <rect x="170" y="64" width="350" height="20" fill="#8ea2e8"></rect>
+        <text x="528" y="79" font-family="Consolas" font-size="13" fill="#1a1d23">7.0</text>
+        <text x="8" y="126" font-family="Arial" font-size="13" fill="#1a1d23">T3 cost-aware</text>
+        <rect x="170" y="112" width="300" height="20" fill="#c3cdf2"></rect>
+        <text x="478" y="127" font-family="Consolas" font-size="13" fill="#1a1d23">6.0</text>
+      </svg>
+      <div class="cap">Trục 0–10 weighted score. T2 không bị bỏ: nó trở thành Phase 4 (reproduce/CI) — điều kiện để T1 có bằng chứng; T3 parked (KD4).</div>
+    </div>
+    <p>Rationale một dòng: T1 là contribution duy nhất đo được bằng evidence có sẵn (gap tự khai trong docs, DSR đã có để so sánh trước/sau, strategy grid sẵn trong generator); T2 là enabler, không phải câu hỏi research; T3 cần data cost không tồn tại trong repo.</p>
+    <div class="governs">Governs → R1–R8 · F1</div>
+  </div>
+
+  <div class="kd">
+    <div class="kd-head">KD2 — Data = synthetic DGP (kết quả chính) + fixture thật nhỏ (replication) <span class="badge directed">session-settled: user-directed</span></div>
+    <p>Chosen thay synthetic-only (thiếu realism) và real-only (không biết ground truth). Ba DGP: null iid, injected-skill, overlapping-label — seed cố định; fixture thật fetch một lần rồi commit, mọi chạy sau offline.</p>
+    <div class="governs">Governs → R4 · R7 · FC4</div>
+  </div>
+
+  <div class="kd">
+    <div class="kd-head">KD3 — Reproduce/CI là enabler của thesis, không phải thesis riêng <span class="badge">session-settled: user-approved</span></div>
+    <p>Thesis 2 (byte-stable repro) được absorb trọn vẹn vào Phase 4: pin dependency, <code>make reproduce</code>, golden diff, GitHub Actions — vì không có nó thì kết luận T1 không có bằng chứng tái tạo.</p>
+    <div class="governs">Governs → R9–R12 · F2 · AE1 · AE3</div>
+  </div>
+
+  <div class="kd">
+    <div class="kd-head">KD4 — Cost-aware / execution sensitivity (T3) parked, không nhét vào cycle <span class="badge">session-settled: user-approved</span></div>
+    <p>Đúng luật guard overengineering của brief: mỗi đồng effort phải phục vụ validity/correctness/repro/evidence/verifiability. Chi phí giao dịch chưa có dữ liệu thật → làm bây giờ sẽ là code phục vụ một claim không kiểm chứng được.</p>
+    <div class="governs">Governs → Scope Boundaries</div>
+  </div>
+
+  <div class="kd">
+    <div class="kd-head">KD5 — Predeclare experiment + falsification trước khi chạy <span class="badge directed">session-settled: user-directed</span></div>
+    <p>Metrics, ngưỡng "kết luận có nghĩa" và 5 falsification conditions (FC1–FC5) khoá trước khi study chạy lần đầu — chống HARKing; sau đó không được nới ngưỡng.</p>
+    <div class="governs">Governs → R5 · R6 · Falsification Conditions</div>
+  </div>
+
+  <div class="kd">
+    <div class="kd-head">KD6 — Module thuần, không framework mới <span class="badge directed">session-settled: user-directed</span></div>
+    <p>Protocol nằm trong package <code>validation/</code> mới, phụ thuộc numpy/statistics, tuân thủ dependency rule <code>docs/architecture.md:37</code> — không plugin system, không abstraction cho một implementation.</p>
+    <div class="governs">Governs → R1 · R3</div>
+  </div>
+
+  <h3>Requirements</h3>
+
+  <div class="req-group">
+    <h4>OOS validation methodology</h4>
+    <ul class="reqs">
+      <li><span class="rid">R1</span> Lớp OOS-validity mới cung cấp đúng ba protocol: purged K-fold với embargo gap, walk-forward anchored, CSCV/PBO — tồn tại như module thuần trong package <code>validation/</code>.</li>
+      <li><span class="rid">R2</span> Property tests + known-value tests chứng minh bất biến chống leakage: không fold nào để nhãn vượt qua embargo, train window không bao giờ nhìn ra ngoài thời điểm dự đoán, CSCV/PBO tái tạo đúng giá trị tham chiếu đã công bố (Bailey–López de Prado).</li>
+      <li><span class="rid">R3</span> Đánh giá OOS đi qua đúng pipeline experiment hiện có (ExperimentRunner/BacktestEngine), không tạo pipeline backtest song song.</li>
+    </ul>
+  </div>
+
+  <div class="req-group">
+    <h4>Study v2 — experiment</h4>
+    <ul class="reqs">
+      <li><span class="rid">R4</span> Study v2 chạy trên ba DGP predeclare với seed cố định — null iid, injected-skill, overlapping-label — dùng chính strategy grid của generator hiện tại.</li>
+      <li><span class="rid">R5</span> Mỗi DGP so sánh baseline pipeline hiện tại (full-sample + DSR) với lớp honest (walk-forward + purged CV + CSCV/PBO) trên cùng dữ liệu.</li>
+      <li><span class="rid">R6</span> Metrics predeclare — selection inflation Δ(IS−OOS Sharpe) với bootstrap CI, PBO, false-selection rate dưới null DGP, DSR trước/sau — "kết luận có nghĩa" = Δ khác 0 ở 95% CI, hoặc PBO &gt; 0.5 cho best-of-N selection, hoặc false-selection rate lệch khỏi nominal 5% ngoài CI.</li>
+      <li><span class="rid">R7</span> Replication trên fixture thật nhỏ (closes từ Polymarket/Kalshi) được fetch đúng một lần rồi commit vào repo; mọi lần chạy study sau đó hoàn toàn offline.</li>
+      <li><span class="rid">R8</span> Output là <code>results/overfitting-study-v2.json</code> (schema predeclared: config hash, dataset id, per-method metrics, conclusion) cùng document <code>.md</code> sinh hoàn toàn từ JSON — không số liệu tay.</li>
+    </ul>
+  </div>
+
+  <div class="req-group">
+    <h4>Reproduction &amp; CI gate</h4>
+    <ul class="reqs">
+      <li><span class="rid">R9</span> <code>make reproduce</code> (hoặc entrypoint tương đương) tái tạo study byte-identical từ clone sạch, offline, sau khi dependency đã được pin.</li>
+      <li><span class="rid">R10</span> CI GitHub Actions mới gate: pytest + mypy strict + lint + regenerate-and-diff; đỏ ngay khi số công bố drift.</li>
+      <li><span class="rid">R11</span> Reproduction được chứng minh trên ≥2 môi trường (CI và một môi trường local khác phiên bản lock).</li>
+      <li><span class="rid">R12</span> Coverage gate (<code>fail_under</code>) bật trong CI, mypy <code>strict=true</code> giữ nguyên.</li>
+    </ul>
+  </div>
+
+  <div class="req-group">
+    <h4>Hygiene prerequisites (không phải depth)</h4>
+    <ul class="reqs">
+      <li><span class="rid">R13</span> ruff về 0 (từ baseline 91 lỗi) trước khi lint gate đầu tiên bật — chỉ sửa mechanical, không đổi behavior.</li>
+      <li><span class="rid">R14</span> Docs đồng bộ sự thật trước Phase 5: <code>experiments.md</code> hết stale (DSR/PSR đã implement), README/AGENTS hết mâu thuẫn phase-status, <code>architecture.md</code> khớp package thật.</li>
+    </ul>
+  </div>
+
+  <div class="req-group">
+    <h4>Public evidence</h4>
+    <ul class="reqs">
+      <li><span class="rid">R15</span> README cuối cycle là evidence surface: reproducibility instructions, methodology + limitations, mọi con số sinh từ artifact, license/status đúng thực tế.</li>
+    </ul>
+  </div>
+
+  <h3>Key Flows</h3>
+
+  <div class="kd">
+    <div class="kd-head">F1 — Vertical slice (chuỗi research question → bằng chứng)</div>
+    <div class="fig">
+      <svg viewBox="0 0 920 130" width="100%" height="130" role="img" aria-label="Vertical slice flow: research question, DGP + fixture, validation layer, study run, artifact + reproduce, CI gate, README evidence">
+        <defs>
+          <marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="3" orient="auto">
+            <path d="M0,0 L7,3 L0,6 z" fill="#5c6470"></path>
+          </marker>
+        </defs>
+        <g font-family="Arial" font-size="11.5" fill="#1a1d23" text-anchor="middle">
+          <rect x="5"   y="30" width="118" height="52" fill="#fff" stroke="#1f4fd8"></rect>
+          <text x="64"  y="52">Research</text><text x="64"  y="67">question</text>
+          <rect x="143" y="30" width="118" height="52" fill="#fff" stroke="#1f4fd8"></rect>
+          <text x="202" y="52">3 DGP + fixture</text><text x="202" y="67">(R4, R7)</text>
+          <rect x="281" y="30" width="118" height="52" fill="#fff" stroke="#1f4fd8"></rect>
+          <text x="340" y="52">validation</text><text x="340" y="67">layer (R1–R3)</text>
+          <rect x="419" y="30" width="118" height="52" fill="#fff" stroke="#1f4fd8"></rect>
+          <text x="478" y="52">study run</text><text x="478" y="67">(R4–R6)</text>
+          <rect x="557" y="30" width="118" height="52" fill="#fff" stroke="#1f4fd8"></rect>
+          <text x="616" y="52">artifact +</text><text x="616" y="67">reproduce (R8–R9)</text>
+          <rect x="695" y="30" width="118" height="52" fill="#fff" stroke="#1f4fd8"></rect>
+          <text x="754" y="52">CI gate</text><text x="754" y="67">(R10–R12)</text>
+          <rect x="833" y="30" width="82"  height="52" fill="#fff" stroke="#1f4fd8"></rect>
+          <text x="874" y="52">README</text><text x="874" y="67">(R15)</text>
+        </g>
+        <g stroke="#5c6470" stroke-width="1.4">
+          <line x1="123" y1="56" x2="139" y2="56" marker-end="url(#ar)"></line>
+          <line x1="261" y1="56" x2="277" y2="56" marker-end="url(#ar)"></line>
+          <line x1="399" y1="56" x2="415" y2="56" marker-end="url(#ar)"></line>
+          <line x1="537" y1="56" x2="553" y2="56" marker-end="url(#ar)"></line>
+          <line x1="675" y1="56" x2="691" y2="56" marker-end="url(#ar)"></line>
+          <line x1="813" y1="56" x2="829" y2="56" marker-end="url(#ar)"></line>
+        </g>
+        <text x="64" y="112" font-family="Arial" font-size="11" fill="#5c6470">tests bám mọi node · mọi số sinh từ artifact</text>
+      </svg>
+      <div class="cap">Chuỗi duy nhất phải chạy end-to-end trước khi cycle đóng — mỗi node ánh xạ sang R-ID.</div>
+    </div>
+    <p class="flowlist">Governs → R1–R15 · F2 · AE1–AE4</p>
+  </div>
+
+  <div class="kd">
+    <div class="kd-head">F2 — Drift-gate loop</div>
+    <p>CI regenerate artifact → diff với golden → <strong>đỏ nếu lệch</strong> (kèm tên giá trị lệch) → sửa lại → xanh trước khi merge. Chạy ở mỗi lần đổi method/config; là cơ chế giữ mọi claim trong README luôn đúng với code.</p>
+    <p class="flowlist">Governs → R9–R12 · AE1 · AE3</p>
+  </div>
+
+  <h3>Acceptance Examples</h3>
+
+  <div class="ae">
+    <p><span class="rid">AE1</span> — Given clone sạch trên 2 môi trường khác phiên bản lock, when <code>make reproduce</code> chạy, then mọi artifact hash khớp từng byte (R9, R11).</p>
+  </div>
+  <div class="ae">
+    <p><span class="rid">AE2</span> — Given study predeclare chạy trên null DGP, then honest false-selection rate nằm trong CI quanh nominal 5% trong khi baseline full-sample cho kết luận lệch — đúng/ngược theo ngưỡng R6 (R4–R6).</p>
+  </div>
+  <div class="ae">
+    <p><span class="rid">AE3</span> — Given CI đã cấu hình, when seed/config bị đổi ngoài chủ đích, then job đỏ và log chỉ rõ giá trị diff (R10).</p>
+  </div>
+  <div class="ae">
+    <p><span class="rid">AE4</span> — Given fixture đã commit, when network bị ngắt, then reproduce vẫn chạy hết và cho cùng kết quả (R7, R9).</p>
+  </div>
+
+  <h3>Success Criteria</h3>
+  <p>Exit khi đủ cả năm:</p>
+  <ol>
+    <li>Reproduce byte-identical chứng minh trên ≥2 môi trường bằng một lệnh (AE1).</li>
+    <li>Lớp validation đủ 3 protocol, property/known-value tests xanh; coverage gate + mypy strict + ruff 0 đều green trong CI.</li>
+    <li>Một kết luận naive-vs-honest cụ thể, có CI, đọc từ <code>results/overfitting-study-v2.json</code> — không số tay.</li>
+    <li>README evidence-rich + toàn bộ docs truth-up (R14, R15).</li>
+    <li>5 falsification conditions đã evaluate xong, không còn mục open.</li>
+  </ol>
+
+  <h3>Falsification Conditions</h3>
+  <p>Predeclare (KD5) — nếu một điều kiện trigger, đúng hành động đó phải diễn ra, không nới ngưỡng:</p>
+
+  <div class="fc"><p><span class="rid">FC1</span> — <strong>Determinism thất bại:</strong> byte-diff vẫn còn sau khi pin dependency và fix các lớp nondeterminism trong Phase 4 → kiến trúc reproduce bị loại; re-scope, không tuyên bố "tái tạo được".</p></div>
+  <div class="fc"><p><span class="rid">FC2</span> — <strong>Honest ≠ naive:</strong> Δ CI chứa 0 và false-selection ≈ nominal trên mọi predeclared DGP → câu hỏi research yếu; ngừng thêm complexity, báo cáo null result trung thực.</p></div>
+  <div class="fc"><p><span class="rid">FC3</span> — <strong>CSCV/PBO không khớp known-value reference</strong> (Bailey–López de Prado worked examples) → implementation CSCV bị loại hoặc thay bằng reference tái tạo được; claim thu hẹp lại.</p></div>
+  <div class="fc"><p><span class="rid">FC4</span> — <strong>Fixture fetch thất bại</strong> (API chết / licensing chặn) → bỏ real replication; claim thu hẹp về synthetic-only, quyết định lại scope trước khi tiếp tục.</p></div>
+  <div class="fc"><p><span class="rid">FC5</span> — <strong>Replication thật ngược chiều synthetic</strong> → generalizability claim bị điều kiện hoá (conditional); README phản ánh đúng ranh giới.</p></div>
+
+  <h3>Delivery Phases</h3>
+  <table class="phase">
+    <tr>
+      <th>Phase</th><th>Tuần</th><th>Deliverable</th><th>Acceptance</th><th>Non-goal</th>
+    </tr>
+    <tr>
+      <td>0 — Baseline</td><td>1</td>
+      <td>Docs truth-up + ruff 91→0 + fixture fetch/commit + đo baseline hiện trạng (hash/số hiện tại) làm mốc</td>
+      <td>docs khớp code; <code>ruff check</code> 0; fixture trong repo (R13, R14, R7 bước fetch)</td>
+      <td>Không thêm method, không đổi behavior</td>
+    </tr>
+    <tr>
+      <td>1 — Core methodology</td><td>1–3</td>
+      <td>Package <code>validation/</code>: purged K-fold + embargo, walk-forward, CSCV/PBO; unit + known-value tests</td>
+      <td>Tests xanh; chỉ phụ thuộc numpy/statistics (R1, R2)</td>
+      <td>Chưa tích hợp pipeline, chưa chạy study</td>
+    </tr>
+    <tr>
+      <td>2 — Validation + tests</td><td>3–4</td>
+      <td>Tích hợp qua ExperimentRunner/BacktestEngine theo window; property tests chống leakage; coverage gate</td>
+      <td>Property tests chứng minh bất invariant; coverage xanh (R2, R3, R12)</td>
+      <td>Chưa sinh số liệu study</td>
+    </tr>
+    <tr>
+      <td>3 — Experiment</td><td>4–6</td>
+      <td>DGP harness 3 mức + chạy study v2 + kết luận naive-vs-honest + <code>results/overfitting-study-v2.json</code> + doc sinh từ JSON</td>
+      <td>Kết luận đúng ngưỡng predeclare R6; mọi số từ artifact (R4–R8)</td>
+      <td>Reproduce chưa phải byte-perfect <span class="cut">← cut-line 6 tuần</span></td>
+    </tr>
+    <tr>
+      <td>4 — Reproduction / CI</td><td>6–8</td>
+      <td>Pin dependency, <code>make reproduce</code>, golden artifact diff, GitHub Actions (test+mypy+lint+regen-diff), chứng minh ≥2 môi trường</td>
+      <td>AE1 xanh; CI đỏ khi drift — AE3 (R9–R12)</td>
+      <td>Không mở rộng method</td>
+    </tr>
+    <tr>
+      <td>5 — Public evidence</td><td>8–10</td>
+      <td>README evidence-rich, methodology + limitations, chốt license/status (owner), docs lần cuối</td>
+      <td>Reviewer ngoài: clone → 1 lệnh → kết luận tái tạo (R14, R15; blocker license đã chốt)</td>
+      <td>Không refactor thêm</td>
+    </tr>
+  </table>
+  <p style="font-size:14px;color:var(--muted);">Window 6–10 tuần: dừng sau tuần 6 = Phase 0–3 (kết luận có artifact, chưa có gate) — mức tối thiểu nghiêm túc; Phase 4–5 là phần đưa claim từ "đúng" sang "kiểm chứng được".</p>
+
+  <h3>Scope Boundaries</h3>
+  <p><strong>Deferred to later cycles:</strong> cost-aware / execution-slippage sensitivity (T3, KD4); conformance với C++ backtester (stretch); mở rộng fixture beyond small replication; plot/dashboard; Systems A/B/C (các repo khác của portfolio).</p>
+  <p><strong>Outside this cycle:</strong> GUI; generic API cleanup; mở rộng strategy library; ML suy đoán; tích hợp exchange/provider mới; live trading; refactor không phục vụ 5 tiêu chí (validity, correctness, reproducibility, evidence, verifiability); bất kỳ thay đổi nào ngoài repo <code>quant-research-engine</code>.</p>
+
+  <h3>Dependencies / Assumptions</h3>
+  <ul>
+    <li><strong>Assumption:</strong> BacktestEngine chạy được theo window slice trên cùng price data (mỗi backtest call nhận data của nó) — verify lại ở planning; nếu sai → R3 phải re-scope.</li>
+    <li><strong>Assumption:</strong> strategy grid của generator hiện tại đủ rộng để best-of-N selection có ý nghĩa thống kê.</li>
+    <li><strong>Dependency:</strong> provider API còn sống đúng lúc fetch (không → FC4).</li>
+    <li><strong>Dependency:</strong> owner chốt license trước Phase 5 công khai.</li>
+    <li><strong>Dependency:</strong> lịch sử đã push lên origin trước khi tạo CI; hiện master ahead 3 / behind 2 + working-tree WIP cần chốt thứ tự.</li>
+    <li><strong>Budget:</strong> 1 người, 6–10 tuần.</li>
+  </ul>
+
+  <h3>Outstanding Questions</h3>
+  <ul>
+    <li><strong>Deferred to Planning:</strong> nguồn fixture cụ thể (market set nào của Polymarket/Kalshi, dung lượng cho phép) — quyết định dựa trên lúc fetch.</li>
+    <li><strong>Deferred to Planning:</strong> window chốt 6 hay 10 tuần theo lịch owner — roadmap đã đánh dấu cut-line, planning chọn khi biết schedule.</li>
+    <li><strong>Deferred to Planning:</strong> format pinning (lockfile vs constraints) + cách chống nondeterminism còn lại (float ordering, timestamp) — how-level, sau khi AE1 đo được lần đầu.</li>
+  </ul>
+
+  <h3>Sources / Research</h3>
+  <ul>
+    <li><a href="https://github.com/kswisse/quant-research-engine/blob/master/docs/experiments.md">docs/experiments.md</a> — dòng 111-113 tự khai walk-forward/purged/CSCV chưa implement; là điểm xuất phát của R1.</li>
+    <li><a href="https://github.com/kswisse/quant-research-engine/blob/master/docs/architecture.md">docs/architecture.md</a> — dependency rule (dòng 37) mà R1/KD6 tuân theo; bảng package cần truth-up (R14).</li>
+    <li><a href="https://github.com/kswisse/quant-research-engine/blob/master/src/quant_engine/statistics/dsr.py">src/quant_engine/statistics/dsr.py</a> + <a href="https://github.com/kswisse/quant-research-engine/blob/master/src/quant_engine/statistics/psr.py">psr.py</a> — DSR/PSR đã implement (baseline so sánh trước/sau của R5).</li>
+    <li><a href="https://github.com/kswisse/quant-research-engine/blob/master/src/quant_engine/engine.py">src/quant_engine/engine.py</a> — <code>:64</code> zero-cost, <code>:120-124</code> zero costs + shift(1): bằng chứng"in-sample-only" của Problem Frame.</li>
+    <li><a href="https://github.com/kswisse/quant-research-engine/blob/master/src/quant_engine/experiments/config.py">src/quant_engine/experiments/config.py:47</a> — experiment_id = sha256(canonical)[:16] (nền cho artifact hashing trong R8).</li>
+    <li><a href="https://github.com/kswisse/quant-research-engine/blob/master/src/quant_engine/datasets/replay.py">src/quant_engine/datasets/replay.py:17</a> — "Never contacts any provider": cơ chế fixture-offline của R7.</li>
+    <li><a href="https://github.com/kswisse/quant-research-engine/blob/master/pyproject.toml">pyproject.toml</a> — mypy <code>strict=true</code>, deps; <a href="https://github.com/kswisse/quant-research-engine/blob/master/.gitignore">.gitignore</a> chặn <code>data/*</code> (cần nới cho fixture — R7).</li>
+    <li><a href="https://github.com/kswisse/quant-research-engine/blob/master/README.md">README.md:7,74</a> + <a href="https://github.com/kswisse/quant-research-engine/blob/master/AGENTS.md">AGENTS.md:9,15</a> — phase-status mâu thuẫn, "Proprietary" không có LICENSE file (Open blocker, R14, R15).</li>
+    <li>Local measurements (verify 12/12 trong brainstorm): <code>ruff check</code> = 91 errors; 1298 test / 54 file; <code>.github/**</code> = 0; <code>data/</code> chỉ .gitkeep; hypothesis import OK.</li>
+    <li>Bailey &amp; López de Prado — CSCV/PBO known-value references (mục tiêu test của R2, ngưỡng FC3).</li>
+    <li>Ideation: <code>docs/ideation/2026-10-03-which-repo-to-deepen-ideation.html</code> — quyết định flagship (context, không phải bằng chứng cho điểm số).</li>
+  </ul>
+
+</section>
+
+<footer class="compose">
+  Composed 2026-10-05T09:01+07:00 by ce-brainstorm from user prompt "QRE depth thesis brainstorm"
+</footer>
+
+</body>
+</html>
