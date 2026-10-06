@@ -9,7 +9,9 @@ AST scan theo cấu trúc ``tests/unit/test_import_boundaries.py``, quét cây
    ``ephemeris``, ``analysis`` (viz đọc ``Trajectory`` dataclass từ
    ``simulation.engine`` — cấm tuyệt đối sẽ tự thà chính nó vì 5/7 module
    ``analysis/`` hard-import ``Trajectory``).
-3. Import ``solar_ephemeris.visualization`` không được load matplotlib
+3. Cấm third-party ML/dashboard: ``torch``/``sklearn``/``streamlit``
+   (R4 — không ML, không dashboard).
+4. Import ``solar_ephemeris.visualization`` không được load matplotlib
    (R29 — Gate A xanh trên máy chưa cài matplotlib).
 
 Kernel-free, không import matplotlib trong chính module test này.
@@ -28,6 +30,7 @@ VIZ = SRC / "visualization"
 
 FORBIDDEN_NAMES = frozenset({"SimulationEngine", "run_to_file", "run_reproducible", "run_phase5"})
 FORBIDDEN_CALL_ATTRS = frozenset({"run", "propagate"})
+FORBIDDEN_THIRD_PARTY = frozenset({"torch", "sklearn", "streamlit"})  # R4: no ML, no dashboard
 ALLOWED_PROJECT_ROOTS = frozenset({"physics", "frames", "simulation", "ephemeris", "analysis", "visualization"})
 
 
@@ -80,6 +83,8 @@ def _scan(directory: Path) -> list[str]:
             if parts[0] == "solar_ephemeris":
                 if len(parts) > 1 and parts[1] not in ALLOWED_PROJECT_ROOTS:
                     violations.append(f"{label} -> forbidden project import {mod}")
+            if parts[0] in FORBIDDEN_THIRD_PARTY:
+                violations.append(f"{label} -> forbidden ML/dashboard import {mod}")
             if any(p in FORBIDDEN_NAMES for p in parts):
                 violations.append(f"{label} -> forbidden import {mod}")
         for node in ast.walk(tree):
@@ -127,6 +132,15 @@ def test_fake_viz_file_importing_experiments_is_flagged(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     assert _scan(tmp_path), "AST scan missed experiments.run_phase5 import"
+
+
+def test_fake_viz_file_importing_ml_or_dashboard_is_flagged(tmp_path: Path) -> None:
+    (tmp_path / "fake_ml.py").write_text(
+        "import torch\nimport sklearn.model_selection\nfrom streamlit import cache\n",
+        encoding="utf-8",
+    )
+    violations = _scan(tmp_path)
+    assert len(violations) >= 3, f"AST scan missed ML/dashboard imports: {violations}"
 
 
 def test_allowed_intra_project_imports_pass_scan(tmp_path: Path) -> None:
