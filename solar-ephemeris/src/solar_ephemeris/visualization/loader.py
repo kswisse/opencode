@@ -7,6 +7,7 @@ gap dicts - the charts render a gap banner instead of a traceback.
 from __future__ import annotations
 
 import json
+import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -172,7 +173,7 @@ def load_trajectory_from(loaded: LoadedRecord) -> Trajectory:
         )
     try:
         return load_trajectory_npz(npz_path)
-    except (OSError, ValueError, KeyError) as exc:
+    except (OSError, ValueError, KeyError, zipfile.BadZipFile) as exc:
         raise _gap(TRAJECTORY_FILENAME, "unreadable", str(exc), npz_path) from exc
 
 

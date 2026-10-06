@@ -25,6 +25,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from solar_ephemeris.ephemeris import fixture_backend
 from solar_ephemeris.ephemeris.fixture_backend import FixtureReference
 from solar_ephemeris.ephemeris.reference import lookup_reference_series
 from solar_ephemeris.ephemeris.types import MetadataMismatchError
@@ -244,6 +245,30 @@ def test_unimportable_spiceypy_falls_back_to_fixture(monkeypatch: pytest.MonkeyP
 def test_failed_kernel_verification_falls_back_to_fixture(tmp_path: Path) -> None:
     provider = select_provider(kernel_path=tmp_path / "absent.bsp")
     assert isinstance(provider, FixtureReference)
+
+
+@pytest.mark.parametrize("kind", ["missing", "corrupt"])
+def test_unusable_fixture_is_data_gap_not_raw_traceback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, kind: str
+) -> None:
+    # The fallback path must never leak FixtureReference's own disk failures
+    # (loader contract: every failure on disk is a DataGapError).
+    if kind == "missing":
+        broken = tmp_path / "absent_fixture.json"
+    else:
+        broken = tmp_path / "corrupt_fixture.json"
+        broken.write_text("{not json", encoding="utf-8")
+    monkeypatch.setattr(fixture_backend, "_default_path", lambda: broken)
+
+    with pytest.raises(DataGapError) as exc:
+        select_provider(kernel_path=tmp_path / "absent.bsp")
+
+    gap = exc.value.gaps[0]
+    assert set(gap) == set(GAP_KEYS)
+    assert gap["name"] == "reference fixture"
+    assert gap["reason"] == "unusable fixture"
+    assert gap["source_path"].endswith("absent.bsp")
+    json.dumps(exc.value.report)  # machine-readable, never a raw traceback
 
 
 # ---------------------------------------------------------------------------

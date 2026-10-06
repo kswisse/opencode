@@ -720,7 +720,7 @@ def test_v3_epochs_outside_fixture_coverage_refuse_before_any_write(
     gap = exc.value.gaps[0]
     assert set(gap) == set(GAP_KEYS)
     assert gap["reason"] == "epochs outside coverage"
-    assert "epoch_jd=" in gap["detail"], gap["detail"]
+    assert "first outside et=" in gap["detail"], gap["detail"]
     json.dumps(exc.value.report)  # machine-readable, never a raw traceback
     assert not out_dir.exists(), "the refused series must leave no PNG behind"
 
@@ -756,6 +756,75 @@ def test_reused_record_reports_incomplete_provenance(
     assert "epoch" in sidecar["missing_provenance"], sidecar["missing_provenance"]
     assert sidecar["gaps"] == [], "payload came from the resolved record"
     assert sidecar["source"] == "stored"
+
+
+def test_reused_record_discloses_provenance_in_trajectory_sidecar(
+    results_root: Path, tmp_path: Path
+) -> None:
+    _plt()
+    target = _full_record(
+        configuration_hash="hash-A", experiment_id="C/T2", bodies=["Earth", "Moon"]
+    )
+    _write_record(results_root, "experiment_C/tier_T2", target, npz=True)
+    source = _write_record(
+        results_root,
+        "experiment_D/T2_30d",
+        _reused_record("experiment_C/tier_T2", "hash-A"),
+    )
+
+    png, _ = api.plot_trajectory(
+        source, tmp_path / "figures" / "fig-01.png", figure_id="fig-01"
+    )
+
+    sidecar = _read(png)
+    assert png.is_file()
+    assert sidecar["experiment_id"] == "D/T2_30d", "identity comes from the requested record"
+    assert sidecar["reused_from"] == "experiment_C/tier_T2"
+    assert sidecar["reused_chain"] == ["experiment_C/tier_T2"]
+    assert sidecar["provenance_complete"] is False
+    assert "epoch" in sidecar["missing_provenance"], sidecar["missing_provenance"]
+
+
+def test_sources_entries_carry_per_member_r9_disclosure(results_root: Path) -> None:
+    target = _full_record(
+        configuration_hash="hash-A", experiment_id="C/T2", bodies=["Earth", "Moon"]
+    )
+    target["comparison"] = _per_body_comparison()
+    _write_record(results_root, "experiment_C/tier_T2", target)
+    reused = _write_record(
+        results_root,
+        "experiment_D/T2_30d",
+        _reused_record("experiment_C/tier_T2", "hash-A"),
+    )
+    direct = _write_record(results_root, "experiment_A/rk4_n25", _full_record())
+    payloads = [
+        api._record_payload(api.load_record(path)) for path in (direct, reused)
+    ]
+
+    sidecar = api.build_sidecar(
+        figure_id="fig-90",
+        source="stored",
+        frame="active_bodies_barycentric",
+        origin="barycenter(Sun, Earth, Moon)",
+        time_scale="TDB",
+        units="m",
+        arrays={"times_s": np.array([0.0, 1.0])},
+        records=payloads,
+    )
+    entries = sidecar["sources"]
+    assert len(entries) == 2
+    assert "reused_from" not in entries[1], "RECORD_KEYS strips R9 keys outright"
+    api._attach_member_provenance(sidecar, payloads)
+
+    direct_entry, reused_entry = sidecar["sources"]
+    assert direct_entry["provenance_complete"] is True
+    assert direct_entry["missing_provenance"] == []
+    assert "reused_from" not in direct_entry
+    assert reused_entry["reused_from"] == "experiment_C/tier_T2"
+    assert reused_entry["reused_chain"] == ["experiment_C/tier_T2"]
+    assert reused_entry["provenance_complete"] is False
+    assert "epoch" in reused_entry["missing_provenance"]
+    json.dumps(sidecar)  # machine-readable, per-member disclosure
 
 
 # ---------------------------------------------------------------------------

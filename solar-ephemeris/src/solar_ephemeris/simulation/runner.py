@@ -14,6 +14,7 @@ on ``config_hash`` — never on raw file bytes.
 from __future__ import annotations
 
 import json
+import zipfile
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -152,7 +153,7 @@ def load_trajectory_npz(npz_path: Path) -> Trajectory:
     npz_path = Path(npz_path)
     try:
         data = np.load(npz_path, allow_pickle=False)
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, zipfile.BadZipFile) as exc:
         raise ValueError(f"{npz_path} is unreadable: {exc}") from exc
     with data:
         missing = [k for k in TRAJECTORY_NPZ_KEYS if k not in data.files]

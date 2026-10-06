@@ -36,7 +36,7 @@ class ReferenceSeries:
     """Reference chain at the recorded epochs plus its one sidecar identity."""
 
     body: str
-    epochs_jd: tuple[float, ...]
+    epochs_jd: tuple[float, ...] | None  # None when the caller supplied ET
     states: tuple[ReferenceState, ...]
     identity: dict[str, object]  # plain dict: caller merges it into the sidecar
 
@@ -62,38 +62,63 @@ def select_provider(kernel_path: Path | str | None = None) -> ReferenceProvider:
 
     Every other outcome (spiceypy absent, kernel absent/modified) falls back
     to ``FixtureReference`` — the policy never leaks an ImportError or a
-    KernelIntegrityError to the caller.
+    KernelIntegrityError to the caller. A fixture that is itself unusable
+    (missing or corrupt file) surfaces as ``DataGapError``, never a raw
+    traceback (loader contract: every failure on disk is a data gap).
     """
     path = Path(kernel_path) if kernel_path is not None else default_kernel_path()
+
+    def fallback() -> ReferenceProvider:
+        try:
+            return FixtureReference()
+        except (OSError, ValueError) as exc:
+            raise DataGapError(
+                make_gap(
+                    "reference fixture",
+                    reason="unusable fixture",
+                    detail=str(exc),
+                    source_path=str(path),
+                )
+            ) from exc
+
     try:
         # Imported here, not at module scope: spiceypy must never load as a
         # side effect of importing the viz layer.
         from solar_ephemeris.ephemeris.spice_backend import SpiceReference
     except ImportError:
-        return FixtureReference()
+        return fallback()
     try:
         return SpiceReference(path)  # construction runs verify_kernel first
     except KernelIntegrityError:
-        return FixtureReference()
+        return fallback()
 
 
 def resolve_reference_series(
     provider: ReferenceProvider,
     *,
     body: str,
-    epochs_jd: Sequence[float],
+    epochs_jd: Sequence[float] | None = None,
+    epochs_et: Sequence[float] | None = None,
     source_path: str,
     model_meta: StateMeta | None = None,
     transform: str | None = None,
 ) -> ReferenceSeries:
     """Look up the whole recorded series, or refuse it whole (KTD6 / KTD5).
 
-    Coverage for EVERY epoch is checked before the first state is fetched: a
-    series that does not fit raises :class:`~solar_ephemeris.visualization.gaps.DataGapError`
+    Exactly one epoch scale must be given: ``epochs_jd`` (the caller holds
+    JDs) or ``epochs_et`` (the model grid ``et0 + t`` — no per-sample JD
+    round-trip, R9). Coverage for EVERY epoch is checked on the ET scale
+    before the first state is fetched: a series that does not fit raises
+    :class:`~solar_ephemeris.visualization.gaps.DataGapError`
     naming the epoch beyond coverage, so no caller can draw a prefix.
     ``model_meta``/``transform`` are forwarded to the KTD2 gate unchanged.
     """
-    epochs = tuple(float(epoch) for epoch in epochs_jd)
+    if (epochs_jd is None) == (epochs_et is None):
+        raise ValueError("supply exactly one of epochs_jd / epochs_et")
+    scale = "et" if epochs_et is not None else "epoch_jd"
+    epochs = tuple(
+        float(epoch) for epoch in (epochs_et if epochs_et is not None else epochs_jd)
+    )
     if not epochs:
         raise DataGapError(
             make_gap(
@@ -104,7 +129,11 @@ def resolve_reference_series(
             )
         )
     outside = [
-        epoch for epoch in epochs if not provider.coverage.contains(jd_tdb_to_et(epoch))
+        epoch
+        for epoch in epochs
+        if not provider.coverage.contains(
+            epoch if scale == "et" else jd_tdb_to_et(epoch)
+        )
     ]
     if outside:
         raise DataGapError(
@@ -114,7 +143,7 @@ def resolve_reference_series(
                 detail=(
                     f"{len(outside)} of {len(epochs)} recorded epochs fall outside "
                     f"provider coverage {provider.coverage.intervals} (TDB s past "
-                    f"J2000); first outside epoch_jd={outside[0]!r}; refusing to "
+                    f"J2000); first outside {scale}={outside[0]!r}; refusing to "
                     "truncate the reference series (no prefix)"
                 ),
                 source_path=source_path,
@@ -123,13 +152,14 @@ def resolve_reference_series(
     states = lookup_reference_series(
         provider,
         body=body,
-        epochs_jd=epochs,
+        epochs_jd=None if epochs_et is not None else epochs,
+        epochs_et=epochs if epochs_et is not None else None,
         model_meta=model_meta,
         transform=transform,
     )
     return ReferenceSeries(
         body=body,
-        epochs_jd=epochs,
+        epochs_jd=None if epochs_et is not None else epochs,
         states=tuple(states),
         identity=reference_identity(provider),
     )

@@ -224,6 +224,19 @@ def test_missing_trajectory_npz_without_redirect_is_data_gap(results_root: Path)
     assert gap["source_path"].endswith("trajectory.npz")
 
 
+def test_corrupt_trajectory_npz_is_data_gap(results_root: Path) -> None:
+    record_dir = _write_record(results_root, "experiment_X/truncated", _full_record())
+    npz = _write_npz(record_dir)
+    raw = npz.read_bytes()
+    npz.write_bytes(raw[: len(raw) // 2])
+    with pytest.raises(DataGapError) as exc:
+        load_trajectory(record_dir)
+    gap = exc.value.gaps[0]
+    assert set(gap) == set(GAP_KEYS)
+    assert gap["reason"] == "unreadable"
+    assert gap["source_path"].endswith("trajectory.npz")
+
+
 def test_loader_rejects_path_outside_results(tmp_path: Path) -> None:
     elsewhere = tmp_path / "elsewhere" / "experiment_X" / "rec"
     elsewhere.mkdir(parents=True)
@@ -297,6 +310,45 @@ def test_reused_hash_mismatch_is_data_gap(results_root: Path) -> None:
     assert set(gap) == set(GAP_KEYS)
     assert gap["reason"] == "configuration_hash mismatch"
     assert "hash-A" in gap["detail"] and "hash-B" in gap["detail"]
+
+
+def test_reused_redirect_cycle_is_data_gap(results_root: Path) -> None:
+    source = _write_record(
+        results_root,
+        "experiment_A/rec",
+        _reused_record("experiment_B/rec", "hash-A"),
+    )
+    _write_record(results_root, "experiment_B/rec", _reused_record("experiment_A/rec", "hash-A"))
+    with pytest.raises(DataGapError) as exc:
+        load_record(source)
+    gap = exc.value.gaps[0]
+    assert set(gap) == set(GAP_KEYS)
+    assert gap["name"] == "reused_from"
+    assert gap["reason"] == "redirect cycle"
+    assert gap["source_path"].endswith("experiment_record.json")
+
+
+def test_reused_redirect_escaping_results_root_is_data_gap(tmp_path: Path) -> None:
+    root = tmp_path / "outer" / "results"
+    source = _write_record(
+        root,
+        "experiment_D/escape",
+        _reused_record("../../elsewhere/rec", "hash-A"),
+    )
+    elsewhere = _write_record(
+        tmp_path / "elsewhere",
+        "rec",
+        _full_record(configuration_hash="hash-B", experiment_id="outside/rec"),
+    )
+    with pytest.raises(DataGapError) as exc:
+        load_record(source)
+    gap = exc.value.gaps[0]
+    assert set(gap) == set(GAP_KEYS)
+    assert gap["name"] == "reused_from"
+    assert gap["reason"] == "redirect escapes results root"
+    declared = gap["source_path"].replace("\\", "/")
+    assert declared.endswith("experiment_D/escape/experiment_record.json")
+    assert (elsewhere / "experiment_record.json").is_file()  # never read: hash-B vs hash-A
 
 
 def test_missing_provenance_fields_are_exposed(results_root: Path) -> None:

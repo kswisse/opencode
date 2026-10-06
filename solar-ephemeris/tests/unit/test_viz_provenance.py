@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
 
 import numpy as np
@@ -365,6 +366,60 @@ def test_overwrite_same_figure_id_is_deterministic_two_files_only(tmp_path: Path
     assert files == ["fig-13.json", "fig-13.png"], f"stray temp/extra files: {files}"
     data = json.loads((out / "fig-13.json").read_text(encoding="utf-8"))
     assert data["figure_id"] == "fig-13"
+
+
+def test_overwrite_final_png_rename_failure_restores_original_pair(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    plt = _plt()
+    out = tmp_path / "figures"
+    old_arrays, new_arrays = _arrays(), _arrays(seed=3.0)
+    png = out / "fig-14.png"
+    fig, ax = plt.subplots()
+    try:
+        ax.plot(old_arrays["times"], old_arrays["positions"][:, 0])
+        write_figure(
+            fig,
+            png_path=png,
+            sidecar=_sidecar(figure_id="fig-14", source="stored"),
+            arrays=old_arrays,
+        )
+    finally:
+        plt.close(fig)
+    sc_path = sidecar_path_for(png)
+    original_sidecar = sc_path.read_bytes()
+    original_png = png.read_bytes()
+
+    real_replace = os.replace
+
+    def _png_rename_locked(src, dst):
+        if Path(dst) == png:
+            raise PermissionError("simulated: target PNG locked")
+        return real_replace(src, dst)
+
+    monkeypatch.setattr(os, "replace", _png_rename_locked)
+    fig, ax = plt.subplots()
+    try:
+        ax.plot(new_arrays["times"], new_arrays["positions"][:, 0])
+        with pytest.raises(PermissionError, match="locked"):
+            write_figure(
+                fig,
+                png_path=png,
+                sidecar=_sidecar(
+                    figure_id="fig-14", source="stored", arrays=new_arrays
+                ),
+                arrays=new_arrays,
+            )
+    finally:
+        plt.close(fig)
+
+    files = sorted(p.name for p in out.iterdir())
+    assert files == ["fig-14.json", "fig-14.png"], f"stray temp/extra files: {files}"
+    assert sc_path.read_bytes() == original_sidecar, "original sidecar must be intact"
+    data = json.loads(sc_path.read_text(encoding="utf-8"))
+    assert data["figure_data_hash"] == figure_data_hash(old_arrays)
+    assert data["figure_data_hash"] != figure_data_hash(new_arrays)
+    assert png.read_bytes() == original_png, "PNG must still be the old render"
 
 
 # ---------------------------------------------------------------------------

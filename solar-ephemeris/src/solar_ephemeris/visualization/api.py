@@ -45,10 +45,9 @@ from solar_ephemeris.analysis import (
     total_energy,
 )
 from solar_ephemeris.ephemeris.comparison import assert_compatible
-from solar_ephemeris.ephemeris.time import jd_tdb_to_et
+from solar_ephemeris.ephemeris.time import jd_tdb_to_et, sample_epochs_et
 from solar_ephemeris.ephemeris.types import ReferenceState
 from solar_ephemeris.frames.transforms import recenter_ssb_to_model
-from solar_ephemeris.physics.constants import SECONDS_PER_DAY
 from solar_ephemeris.simulation.engine import Trajectory
 
 from .composition import (
@@ -246,12 +245,17 @@ def _record_payload(loaded: LoadedRecord) -> dict:
 
     Stripping ``reference_kernel``/``kernel_sha256`` is the R12 rule: the
     figure's ONE reference identity comes from ``extra`` (lookup identity),
-    never from a record that may name a different kernel.
+    never from a record that may name a different kernel. The R9 keys of
+    ``_record_extra`` ride along so every ``sources[]`` entry can disclose
+    its own redirect/completeness (RECORD_KEYS alone would drop them).
     """
     return {
-        key: value
-        for key, value in loaded.record.items()
-        if key not in ("reference_kernel", "kernel_sha256")
+        **{
+            key: value
+            for key, value in loaded.record.items()
+            if key not in ("reference_kernel", "kernel_sha256")
+        },
+        **_record_extra(loaded),
     }
 
 
@@ -265,6 +269,32 @@ def _record_extra(loaded: LoadedRecord) -> dict:
         extra["reused_from"] = loaded.reused_from
         extra["reused_chain"] = list(loaded.reused_chain)
     return extra
+
+
+_R9_KEYS: Final[tuple[str, ...]] = (
+    "provenance_complete",
+    "missing_provenance",
+    "reused_from",
+    "reused_chain",
+)
+
+
+def _attach_member_provenance(sidecar: dict, payloads: Sequence[dict]) -> None:
+    """R9 disclosure of a multi-record figure (AE3): ``sources[]`` entries are
+    filtered to RECORD_KEYS by ``build_sidecar``, so the per-member redirect /
+    completeness keys are re-attached here; a single-member figure lands them
+    at the top level, exactly like the one-record figures (V1-V6).
+    """
+    if not payloads:
+        return
+    entries = sidecar.get("sources")
+    if entries is None:
+        sidecar.update(
+            {key: payloads[0][key] for key in _R9_KEYS if key in payloads[0]}
+        )
+        return
+    for entry, payload in zip(entries, payloads):
+        entry.update({key: payload[key] for key in _R9_KEYS if key in payload})
 
 
 def _role_kwargs(role: str, index: int) -> dict:
@@ -315,7 +345,7 @@ def _reference_in_model_frame(
     Returns (pos_rel, vel_rel, transform, provider identity).
     """
     meta = traj.meta.state_meta
-    epochs_jd = meta.epoch_jd + traj.times / SECONDS_PER_DAY
+    epochs_et = sample_epochs_et(meta.epoch_jd, traj.times)  # et0 + t, never a JD round-trip
     provider = select_provider(kernel_path)
 
     ref_pos = np.empty_like(traj.positions)
@@ -324,7 +354,7 @@ def _reference_in_model_frame(
     identity: dict = {}
     for k, name in enumerate(traj.body_names):
         series = resolve_reference_series(
-            provider, body=name, epochs_jd=epochs_jd, source_path=source_path
+            provider, body=name, epochs_et=epochs_et, source_path=source_path
         )
         for i, state in enumerate(series.states):
             ref_pos[i, k] = state.position_m
@@ -464,6 +494,7 @@ def plot_trajectory(
         arrays=arrays,
         records=_record_payload(loaded),
         projection=projection,
+        extra=_record_extra(loaded),
     )
 
     import matplotlib.pyplot as plt
@@ -1121,6 +1152,7 @@ def _convergence_a1(root: Path, png_path: Path, figure_id: str) -> tuple[Path, P
         records=sources,
         extra=extra,
     )
+    _attach_member_provenance(sidecar, sources)
 
     import matplotlib.pyplot as plt
 
@@ -1275,6 +1307,7 @@ def _convergence_a2b(root: Path, png_path: Path, figure_id: str) -> tuple[Path, 
             "floor_dominated_intervals": intervals,
         },
     )
+    _attach_member_provenance(sidecar, sources)
 
     import matplotlib.pyplot as plt
 
@@ -1380,6 +1413,7 @@ def plot_body_count(
         records=sources,
         extra={"runset_members": [member.name for member in members]},
     )
+    _attach_member_provenance(sidecar, sources)
 
     ylabel = _error_ylabel("position", unit)
 
@@ -1480,6 +1514,7 @@ def plot_horizon_error(
         records=sources,
         extra=extra,
     )
+    _attach_member_provenance(sidecar, sources)
 
     ylabel = _error_ylabel("position", unit)
 

@@ -245,7 +245,10 @@ def write_figure(
     3. PNG -> temp file, sha256 recorded as auxiliary info;
     4. sidecar written final (atomic) - the PNG only becomes visible after
        its sidecar exists, so a PNG-without-sidecar can never be observed;
-    5. temp PNG -> replace into place (same figure_id overwrites).
+    5. temp PNG -> replace into place (same figure_id overwrites);
+    6. any failure leaves either the previous sidecar/PNG pair or neither
+       (the previous sidecar bytes are restored, removed when none existed
+       before), never a sidecar from one render beside a PNG from another.
     """
     png_path = Path(png_path)
     if RESULTS_DIRNAME in png_path.resolve().parts:
@@ -255,13 +258,19 @@ def write_figure(
     ensure_finite(arrays)
     png_path.parent.mkdir(parents=True, exist_ok=True)
     tmp_png = png_path.with_name(png_path.name + ".tmp")
+    sc_path = sidecar_path_for(png_path)
+    previous_sc = sc_path.read_bytes() if sc_path.exists() else None
     try:
         fig.savefig(tmp_png, format="png")
         payload = dict(sidecar)
         payload["png_sha256"] = hashlib.sha256(tmp_png.read_bytes()).hexdigest()
-        sc_path = write_sidecar(sidecar_path_for(png_path), payload)
+        write_sidecar(sc_path, payload)
+        os.replace(tmp_png, png_path)
     except BaseException:
+        if previous_sc is None:
+            sc_path.unlink(missing_ok=True)
+        else:
+            sc_path.write_bytes(previous_sc)
         tmp_png.unlink(missing_ok=True)
         raise
-    os.replace(tmp_png, png_path)
     return png_path, sc_path

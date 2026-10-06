@@ -116,29 +116,42 @@ def lookup_reference_series(
     provider: ReferenceProvider,
     *,
     body: str,
-    epochs_jd: Sequence[float],
+    epochs_jd: Sequence[float] | None = None,
+    epochs_et: Sequence[float] | None = None,
     model_meta: StateMeta | None = None,
     transform: str | None = None,
 ) -> list[ReferenceState]:
     """Read-only chain of reference states at already-recorded epochs (KTD2).
 
-    The additive neighbour of ``compare_trajectory``: the same gate ORDER —
-    NAIF mapping first, then :func:`get_state`'s metadata gate per epoch
-    (frame → center → TDB → mapping → coverage → honesty audit) — and, when
-    the caller passes ``model_meta`` together with ``transform``, the same
-    ``assert_compatible`` gate on the first state that ``compare_trajectory``
-    runs before it subtracts anything. Nothing is subtracted here, nothing is
-    written, and ``ComparisonResult`` (the committed record schema) is
-    untouched.
+    The additive neighbour of ``compare_trajectory``: NAIF mapping first,
+    then the fetch — one of two scales, exactly one of which must be given:
+
+    - ``epochs_jd``: epochs the caller genuinely holds as JDs, each run
+      through :func:`get_state`'s metadata gate (frame → center → TDB →
+      mapping → coverage → honesty audit);
+    - ``epochs_et``: the model sampling grid ``et0 + t`` in SPICE ephemeris
+      time — no per-sample JD round-trip anywhere (R9) — fetched with
+      ``provider.state_at`` exactly like ``compare_trajectory`` step 3;
+
+    and, when the caller passes ``model_meta`` together with ``transform``,
+    the same ``assert_compatible`` gate on the first state that
+    ``compare_trajectory`` runs before it subtracts anything. Nothing is
+    subtracted here, nothing is written, and ``ComparisonResult`` (the
+    committed record schema) is untouched.
 
     Any exception propagates before a chain can be returned — a refused
     lookup yields no states at all, never a truncated prefix (KTD5).
     """
-    naif_id(body)  # unmapped body raises even when epochs_jd is empty
-    states = [
-        get_state(provider, body=body, epoch_jd=epoch_jd)
-        for epoch_jd in epochs_jd
-    ]
+    if (epochs_jd is None) == (epochs_et is None):
+        raise ValueError("supply exactly one of epochs_jd / epochs_et")
+    naif_id(body)  # unmapped body raises even when the epoch list is empty
+    if epochs_et is not None:
+        states = [provider.state_at(body=body, et=float(et)) for et in epochs_et]
+    else:
+        states = [
+            get_state(provider, body=body, epoch_jd=epoch_jd)
+            for epoch_jd in epochs_jd  # not None: the guard above refused that case
+        ]
     if model_meta is not None and states:
         # Local import: comparison.py imports this module for the protocol,
         # so assert_compatible cannot be a module-level import here.
