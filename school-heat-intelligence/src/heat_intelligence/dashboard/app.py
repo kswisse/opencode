@@ -25,7 +25,13 @@ data_path = Path(__file__).parent.parent.parent.parent / "data" / "demo_campus.c
 data = load_data(str(data_path))
 
 from heat_intelligence.dashboard.pages import _p1_overview
-_p1_overview.render(data, config)
+from heat_intelligence.dashboard.pages import _p9_equipment
+
+tab_campus, tab_equip = st.tabs(["🌡️ Campus", "🔧 Equipment"])
+with tab_campus:
+    _p1_overview.render(data, config)
+with tab_equip:
+    _p9_equipment.render(data, config)
 
 st.divider()
 st.caption(

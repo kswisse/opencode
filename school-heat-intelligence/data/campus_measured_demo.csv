@@ -1,0 +1,5 @@
+timestamp,zone_id,zone_name,lat,lon,air_temperature,humidity,wind_speed,ndvi,canopy_pct,shade_pct,surface_type,student_count,exposure_hours,provenance
+3600,zone_01,san_truong,10.76,106.68,34.5,62.0,1.5,,5.0,10.0,asphalt,80,1.0,measured
+7200,zone_01,san_truong,10.76,106.68,35.1,60.5,1.5,,5.0,10.0,asphalt,80,1.0,measured
+3600,zone_02,lop_12a1,10.76,106.68,31.2,68.0,0.5,,0.0,80.0,concrete,40,5.0,measured
+7200,zone_02,lop_12a1,10.76,106.68,31.8,66.5,0.5,,0.0,80.0,concrete,40,5.0,measured

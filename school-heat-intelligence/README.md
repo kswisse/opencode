@@ -13,6 +13,7 @@ streamlit run src/heat_intelligence/dashboard/app.py
 
 ```
 Pipeline: data → risk → hotspot → forecast → exposure → intervention → priority → dashboard
+Equipment: campus heat → failure probability → cost-aware policy → maintenance action
 ```
 
 ### Modules
@@ -26,7 +27,8 @@ Pipeline: data → risk → hotspot → forecast → exposure → intervention �
 | `exposure/` | Student exposure scoring (normalized) |
 | `intervention/` | Scenario-based impact simulation |
 | `priority/` | Combined priority ranking with explanations |
-| `dashboard/` | Streamlit 7-page interactive dashboard |
+| `dashboard/` | Streamlit 2-tab dashboard: 🌡️ Campus + 🔧 Equipment |
+| `equipment/` | Cost-aware equipment policy (LOW/WATCH/HIGH) + heat→failure heuristic |
 
 ## Formulas
 
@@ -53,6 +55,13 @@ priority = w_risk × risk_norm + w_exposure × exposure_norm + w_intervention ×
 ## Configuration
 
 All weights, factors, and thresholds are configurable in `config.yaml`.
+
+## Real sensor data
+
+See `docs/SENSOR_GUIDE.md`: flash `firmware/dht22_logger.ino` on ESP32+DHT22,
+log 2 weeks, then `python scripts/sensor_to_campus.py data/sensor_log.csv
+data/campus_measured.csv` and point the dashboard at it. Template + demo
+output: `data/sensor_template.csv`, `data/campus_measured_demo.csv`.
 
 ## Research Integrity
 

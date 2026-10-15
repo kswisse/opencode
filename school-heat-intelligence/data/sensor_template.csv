@@ -1,0 +1,5 @@
+timestamp,node_id,temp_c,humidity
+3600,san_truong,34.5,62.0
+7200,san_truong,35.1,60.5
+3600,lop_12a1,31.2,68.0
+7200,lop_12a1,31.8,66.5
