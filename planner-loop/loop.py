@@ -149,3 +149,63 @@ def guardrail_check(cfg, instruction):
             raise SystemExit("GUARDRAIL: instruction matches denied pattern %r" % pattern)
     if g.get("stop_on_risk_flag", True) and instruction.get("risk") == "high":
         raise SystemExit("GUARDRAIL: instruction flagged risk=high; human must handle")
+
+
+def _instruction_path(home, turn):
+    return os.path.join(home, "turns", "%03d_instruction.json" % turn)
+
+
+def _result_path(home, turn):
+    return os.path.join(home, "turns", "%03d_result.md" % turn)
+
+
+def cmd_plan(home):
+    cfg = load_config(home)
+    state = load_state(home)
+    masterplan = read_text(os.path.join(home, "masterplan.md"), default="(empty)")
+    instruction = None
+    for _ in range(2):
+        raw = call_planner(
+            cfg, build_prompt(masterplan, state, state.get("last_result_summary")))
+        try:
+            instruction = parse_instruction(raw)
+            break
+        except ValueError:
+            instruction = None
+    if instruction is None:
+        raise SystemExit("planner returned an invalid instruction twice; stopping")
+    guardrail_check(cfg, instruction)
+    turn = state["turn"] + 1
+    instruction["turn"] = turn
+    os.makedirs(os.path.join(home, "turns"), exist_ok=True)
+    atomic_write_json(_instruction_path(home, turn), instruction)
+    state["status"] = "awaiting_approval"
+    save_state(home, state)
+    append_event(home, "plan turn=%d goal=%s" % (turn, instruction.get("goal", "")))
+    print(json.dumps(instruction, ensure_ascii=False, indent=2))
+
+
+def commit_result(home, turn, body, status_name, summary):
+    os.makedirs(os.path.join(home, "turns"), exist_ok=True)
+    with open(_result_path(home, turn), "w", encoding="utf-8") as f:
+        f.write(body)
+    instruction = load_json(_instruction_path(home, turn), default={})
+    state = load_state(home)
+    state["turn"] = turn
+    state["last_result_summary"] = summary
+    if instruction.get("done"):
+        state["done"] = True
+        state["status"] = "done"
+    elif status_name == "blocked":
+        state["status"] = "blocked"
+    else:
+        state["status"] = "awaiting_instruction"
+    save_state(home, state)
+    append_event(home, "commit turn=%d status=%s" % (turn, status_name))
+
+
+def cmd_commit(home, status_name, summary):
+    state = load_state(home)
+    turn = state["turn"] + 1
+    commit_result(home, turn, sys.stdin.read(), status_name, summary)
+    print("committed turn %d" % turn)

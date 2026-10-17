@@ -153,3 +153,62 @@ def test_guardrail_denied_pattern_matches_non_ascii():
 def test_guardrail_allows_clean_instruction():
     cfg = {"guardrails": {"denied_patterns": ["rm -rf"], "stop_on_risk_flag": True}}
     loop.guardrail_check(cfg, instr())  # no raise
+
+
+def make_home(tmp_path):
+    target = tmp_path / "target"
+    target.mkdir()
+    (tmp_path / "masterplan.md").write_text("# Plan\nDo the thing.", encoding="utf-8")
+    (tmp_path / "config.json").write_text(json.dumps({
+        "target_dir": str(target),
+        "planner": {"provider": "gemini", "base_url": "https://x/y",
+                    "model": "m", "api_key_env": "GEMINI_API_KEY", "fallbacks": []},
+        "executor": {"kind": "in_session", "cmd": None},
+        "guardrails": {"denied_patterns": ["rm -rf"], "stop_on_risk_flag": True},
+        "max_turns": 10,
+    }), encoding="utf-8")
+    return tmp_path
+
+
+def _stdin(monkeypatch, text):
+    monkeypatch.setattr("sys.stdin", io.StringIO(text))
+
+
+def test_plan_then_commit_advances_turn(tmp_path, monkeypatch):
+    home = make_home(tmp_path)
+    monkeypatch.setattr(loop, "call_planner", lambda cfg, prompt: json.dumps(instr()))
+    loop.cmd_plan(str(home))
+    assert loop.load_state(str(home))["status"] == "awaiting_approval"
+    assert loop.load_state(str(home))["turn"] == 0
+    _stdin(monkeypatch, "ok done")
+    loop.cmd_commit(str(home), "done", "did it")
+    st = loop.load_state(str(home))
+    assert st["turn"] == 1
+    assert st["last_result_summary"] == "did it"
+    assert (home / "turns" / "001_result.md").read_text(encoding="utf-8") == "ok done"
+
+
+def test_replan_same_turn_when_interrupted(tmp_path, monkeypatch):
+    home = make_home(tmp_path)
+    monkeypatch.setattr(loop, "call_planner", lambda cfg, prompt: json.dumps(instr(goal="g1")))
+    loop.cmd_plan(str(home))
+    loop.cmd_plan(str(home))  # interrupted before commit -> replan overwrites turn 1
+    assert loop.load_state(str(home))["turn"] == 0
+    assert (home / "turns" / "001_instruction.json").exists()
+
+
+def test_done_flag_sets_state_done(tmp_path, monkeypatch):
+    home = make_home(tmp_path)
+    monkeypatch.setattr(loop, "call_planner", lambda cfg, prompt: json.dumps(instr(done=True)))
+    loop.cmd_plan(str(home))
+    _stdin(monkeypatch, "x")
+    loop.cmd_commit(str(home), "done", "x")
+    assert loop.load_state(str(home))["done"] is True
+    assert loop.load_state(str(home))["status"] == "done"
+
+
+def test_plan_blocks_and_stops_on_high_risk(tmp_path, monkeypatch):
+    home = make_home(tmp_path)
+    monkeypatch.setattr(loop, "call_planner", lambda cfg, prompt: json.dumps(instr(risk="high")))
+    with pytest.raises(SystemExit):
+        loop.cmd_plan(str(home))
