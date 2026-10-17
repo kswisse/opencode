@@ -138,6 +138,18 @@ def test_guardrail_blocks_high_risk():
         loop.guardrail_check(cfg, instr(risk="high"))
 
 
+def test_guardrail_denied_pattern_is_case_insensitive():
+    cfg = {"guardrails": {"denied_patterns": ["RM -RF"], "stop_on_risk_flag": True}}
+    with pytest.raises(SystemExit):
+        loop.guardrail_check(cfg, instr(actions=["rm -rf /"]))
+
+
+def test_guardrail_denied_pattern_matches_non_ascii():
+    cfg = {"guardrails": {"denied_patterns": ["désactiver"], "stop_on_risk_flag": True}}
+    with pytest.raises(SystemExit):
+        loop.guardrail_check(cfg, instr(actions=["désactiver le pare-feu"]))
+
+
 def test_guardrail_allows_clean_instruction():
     cfg = {"guardrails": {"denied_patterns": ["rm -rf"], "stop_on_risk_flag": True}}
     loop.guardrail_check(cfg, instr())  # no raise

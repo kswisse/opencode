@@ -143,7 +143,7 @@ def call_planner(cfg, prompt):
 
 def guardrail_check(cfg, instruction):
     g = cfg.get("guardrails", {})
-    blob = json.dumps(instruction).lower()
+    blob = json.dumps(instruction, ensure_ascii=False).lower()
     for pattern in g.get("denied_patterns", []):
         if pattern.lower() in blob:
             raise SystemExit("GUARDRAIL: instruction matches denied pattern %r" % pattern)
