@@ -13,7 +13,7 @@ point resumes from the last committed turn.
 ```
 python loop.py plan          # planner writes turns/NNN_instruction.json and prints it
 # -> read the instruction, approve / edit / skip with the agent
-python loop.py commit --status done --summary "one line"   # pipe the result on stdin
+python loop.py commit --home <dir> --status done --summary "one line" < result.md   # result piped on stdin
 ```
 Repeat. Stop when the instruction has `"done": true`.
 
@@ -30,10 +30,14 @@ python loop.py run
 - `events.log` — human-readable history.
 
 ## Guardrails
-Instructions whose text matches a `denied_patterns` entry, or that carry
-`"risk": "high"`, abort before execution and require a human. The executor must
-never write outside `guardrails.allowed_roots`, and must never edit
-`masterplan.md`, `state.json`, or `loop.py`.
+What the code enforces today: instructions whose text matches a
+`denied_patterns` entry, or that carry `"risk": "high"`, abort before execution
+and require a human.
+
+The executor is *expected* to stay inside `guardrails.allowed_roots` and never
+edit `masterplan.md`, `state.json`, or `loop.py` — but `allowed_roots` is
+reserved and **not yet enforced** by `guardrail_check`; treat it as a
+convention, not a boundary.
 
 ## Tests
 ```
