@@ -231,7 +231,8 @@ def cmd_run(home):
         prompt = json.dumps(instruction, ensure_ascii=False)
         proc = subprocess.run(
             executor_cmd.replace("{prompt}", prompt),
-            shell=True, cwd=cfg["target_dir"], capture_output=True, text=True)
+            shell=True, cwd=cfg["target_dir"], capture_output=True, text=True,
+            encoding="utf-8")
         body = proc.stdout + ("\n[stderr]\n" + proc.stderr if proc.stderr else "")
         status_name = "done" if proc.returncode == 0 else "blocked"
         commit_result(home, turn, body, status_name, body.strip()[:200])

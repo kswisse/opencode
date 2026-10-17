@@ -224,3 +224,29 @@ def test_run_headless_one_turn_then_done(tmp_path, monkeypatch):
     st = loop.load_state(str(home))
     assert st["done"] is True and st["turn"] == 1
     assert "42" in (home / "turns" / "001_result.md").read_text(encoding="utf-8")
+
+
+def test_run_passes_prompt_and_cwd(tmp_path, monkeypatch):
+    home = make_home(tmp_path)
+    monkeypatch.setattr(loop, "call_planner", lambda cfg, prompt: json.dumps(instr(done=True)))
+    cfg = loop.load_config(str(home))
+    cfg["executor"]["cmd"] = "echo {prompt}"
+    (home / "config.json").write_text(json.dumps(cfg), encoding="utf-8")
+    recorded = {}
+
+    class FakeProc:
+        returncode = 0
+        stdout = "ok"
+        stderr = ""
+
+    def fake_run(cmd, **kwargs):
+        recorded["cmd"] = cmd
+        recorded["cwd"] = kwargs.get("cwd")
+        return FakeProc()
+
+    monkeypatch.setattr(loop.subprocess, "run", fake_run)
+    loop.cmd_run(str(home))
+    instruction = json.loads((home / "turns" / "001_instruction.json").read_text(encoding="utf-8"))
+    expected = "echo " + json.dumps(instruction, ensure_ascii=False)
+    assert recorded["cmd"] == expected
+    assert recorded["cwd"] == cfg["target_dir"]
