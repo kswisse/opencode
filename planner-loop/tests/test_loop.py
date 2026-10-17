@@ -1,3 +1,4 @@
+import io
 import json
 import os
 import sys
@@ -41,3 +42,26 @@ def test_parse_instruction_rejects_missing_key():
 def test_build_prompt_contains_sections():
     p = loop.build_prompt("# Plan", {"turn": 0}, "prev")
     assert "MASTERPLAN" in p and "STATE" in p and "LAST RESULT" in p and "prev" in p
+
+
+def test_call_planner_parses_gemini_answer(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    payload = json.dumps({"candidates": [{"content": {"parts": [{"text": "HELLO"}]}}]}).encode()
+
+    class FakeResp(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    monkeypatch.setattr(loop.urllib.request, "urlopen", lambda req, timeout=60: FakeResp(payload))
+    cfg = {"planner": {"base_url": "https://x/y", "model": "m", "api_key_env": "GEMINI_API_KEY"}}
+    assert loop.call_planner(cfg, "prompt") == "HELLO"
+
+
+def test_call_planner_requires_key(monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    cfg = {"planner": {"base_url": "https://x/y", "model": "m", "api_key_env": "GEMINI_API_KEY"}}
+    with pytest.raises(SystemExit):
+        loop.call_planner(cfg, "prompt")

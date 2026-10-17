@@ -116,3 +116,25 @@ def parse_instruction(text):
         if key not in obj:
             raise ValueError("instruction missing key: %s" % key)
     return obj
+
+
+def call_planner(cfg, prompt):
+    planner = cfg["planner"]
+    key = os.environ.get(planner.get("api_key_env", ""), "")
+    if not key:
+        raise SystemExit("planner api key env %r is empty" % planner.get("api_key_env"))
+    url = "%s/models/%s:generateContent?key=%s" % (
+        planner["base_url"].rstrip("/"), planner["model"], key)
+    body = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode("utf-8")
+    req = urllib.request.Request(
+        url, data=body, headers={"Content-Type": "application/json"})
+    last = None
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(req, timeout=60) as resp:
+                data = json.load(resp)
+            return data["candidates"][0]["content"]["parts"][0]["text"]
+        except (urllib.error.URLError, urllib.error.HTTPError, KeyError, IndexError) as exc:
+            last = exc
+            time.sleep(2 ** attempt)
+    raise SystemExit("planner call failed after retries: %r" % last)
