@@ -139,3 +139,13 @@ def call_planner(cfg, prompt):
             last = exc
             time.sleep(2 ** attempt)
     raise SystemExit("planner call failed after retries: %r" % last)
+
+
+def guardrail_check(cfg, instruction):
+    g = cfg.get("guardrails", {})
+    blob = json.dumps(instruction).lower()
+    for pattern in g.get("denied_patterns", []):
+        if pattern.lower() in blob:
+            raise SystemExit("GUARDRAIL: instruction matches denied pattern %r" % pattern)
+    if g.get("stop_on_risk_flag", True) and instruction.get("risk") == "high":
+        raise SystemExit("GUARDRAIL: instruction flagged risk=high; human must handle")

@@ -117,3 +117,27 @@ def test_call_planner_requires_key(monkeypatch):
     cfg = {"planner": {"base_url": "https://x/y", "model": "m", "api_key_env": "GEMINI_API_KEY"}}
     with pytest.raises(SystemExit):
         loop.call_planner(cfg, "prompt")
+
+
+def instr(**over):
+    base = {"turn": 0, "goal": "g", "actions": ["a"], "acceptance": "ok",
+            "risk": "none", "done": False}
+    base.update(over)
+    return base
+
+
+def test_guardrail_blocks_denied_pattern():
+    cfg = {"guardrails": {"denied_patterns": ["rm -rf"], "stop_on_risk_flag": True}}
+    with pytest.raises(SystemExit):
+        loop.guardrail_check(cfg, instr(actions=["rm -rf /"]))
+
+
+def test_guardrail_blocks_high_risk():
+    cfg = {"guardrails": {"denied_patterns": [], "stop_on_risk_flag": True}}
+    with pytest.raises(SystemExit):
+        loop.guardrail_check(cfg, instr(risk="high"))
+
+
+def test_guardrail_allows_clean_instruction():
+    cfg = {"guardrails": {"denied_patterns": ["rm -rf"], "stop_on_risk_flag": True}}
+    loop.guardrail_check(cfg, instr())  # no raise
