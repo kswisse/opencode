@@ -90,3 +90,29 @@ def load_state(home):
 def save_state(home, state):
     state["updated_at"] = _now()
     atomic_write_json(os.path.join(home, "state.json"), state)
+
+
+def build_prompt(masterplan, state, last_result):
+    return "\n\n".join([
+        PLANNER_SYSTEM,
+        "=== MASTERPLAN ===\n" + masterplan,
+        "=== STATE ===\n" + json.dumps(state, ensure_ascii=False),
+        "=== LAST RESULT ===\n" + (last_result or "(none)"),
+    ])
+
+
+def parse_instruction(text):
+    s = text.strip()
+    if s.startswith("```"):
+        s = s.split("```")[1]
+        if s[:4].lower() == "json":
+            s = s[4:]
+        s = s.strip()
+    i, j = s.find("{"), s.rfind("}")
+    if i < 0 or j < 0:
+        raise ValueError("no JSON object found in planner reply")
+    obj = json.loads(s[i:j + 1])
+    for key in REQUIRED_INSTRUCTION_KEYS:
+        if key not in obj:
+            raise ValueError("instruction missing key: %s" % key)
+    return obj
