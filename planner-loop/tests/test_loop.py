@@ -60,6 +60,58 @@ def test_call_planner_parses_gemini_answer(monkeypatch):
     assert loop.call_planner(cfg, "prompt") == "HELLO"
 
 
+def test_call_planner_retries_transient_failures(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr(loop.time, "sleep", lambda s: None)
+    payload = json.dumps({"candidates": [{"content": {"parts": [{"text": "OK"}]}}]}).encode()
+
+    class FakeResp(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    calls = {"n": 0}
+
+    def fake_urlopen(req, timeout=60):
+        calls["n"] += 1
+        if calls["n"] <= 2:
+            raise loop.urllib.error.URLError("boom")
+        return FakeResp(payload)
+
+    monkeypatch.setattr(loop.urllib.request, "urlopen", fake_urlopen)
+    cfg = {"planner": {"base_url": "https://x/y", "model": "m", "api_key_env": "GEMINI_API_KEY"}}
+    assert loop.call_planner(cfg, "p") == "OK"
+    assert calls["n"] == 3
+
+
+def test_call_planner_retries_on_non_json_body(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    monkeypatch.setattr(loop.time, "sleep", lambda s: None)
+    payload = json.dumps({"candidates": [{"content": {"parts": [{"text": "OK"}]}}]}).encode()
+
+    class FakeResp(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    calls = {"n": 0}
+
+    def fake_urlopen(req, timeout=60):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            return FakeResp(b"<html>502 Bad Gateway</html>")
+        return FakeResp(payload)
+
+    monkeypatch.setattr(loop.urllib.request, "urlopen", fake_urlopen)
+    cfg = {"planner": {"base_url": "https://x/y", "model": "m", "api_key_env": "GEMINI_API_KEY"}}
+    assert loop.call_planner(cfg, "p") == "OK"
+    assert calls["n"] == 2
+
+
 def test_call_planner_requires_key(monkeypatch):
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     cfg = {"planner": {"base_url": "https://x/y", "model": "m", "api_key_env": "GEMINI_API_KEY"}}

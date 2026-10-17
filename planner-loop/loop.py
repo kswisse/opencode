@@ -134,7 +134,8 @@ def call_planner(cfg, prompt):
             with urllib.request.urlopen(req, timeout=60) as resp:
                 data = json.load(resp)
             return data["candidates"][0]["content"]["parts"][0]["text"]
-        except (urllib.error.URLError, urllib.error.HTTPError, KeyError, IndexError) as exc:
+        except (urllib.error.URLError, urllib.error.HTTPError, KeyError, IndexError,
+                ValueError) as exc:
             last = exc
             time.sleep(2 ** attempt)
     raise SystemExit("planner call failed after retries: %r" % last)
