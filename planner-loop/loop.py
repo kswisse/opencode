@@ -14,6 +14,7 @@ import argparse
 import datetime
 import json
 import os
+import shlex
 import subprocess
 import sys
 import time
@@ -176,6 +177,8 @@ def cmd_plan(home):
         raise SystemExit("planner returned an invalid instruction twice; stopping")
     guardrail_check(cfg, instruction)
     turn = state["turn"] + 1
+    if cfg.get("max_turns") and turn > cfg["max_turns"]:
+        raise SystemExit("max_turns=%d reached; stopping" % cfg["max_turns"])
     instruction["turn"] = turn
     os.makedirs(os.path.join(home, "turns"), exist_ok=True)
     atomic_write_json(_instruction_path(home, turn), instruction)
@@ -185,7 +188,7 @@ def cmd_plan(home):
     print(json.dumps(instruction, ensure_ascii=False, indent=2))
 
 
-def commit_result(home, turn, body, status_name, summary):
+def commit_result(home, turn, body, status_name, summary, forced_status=None):
     os.makedirs(os.path.join(home, "turns"), exist_ok=True)
     with open(_result_path(home, turn), "w", encoding="utf-8") as f:
         f.write(body)
@@ -193,7 +196,10 @@ def commit_result(home, turn, body, status_name, summary):
     state = load_state(home)
     state["turn"] = turn
     state["last_result_summary"] = summary
-    if instruction.get("done"):
+    if forced_status == "blocked":
+        state["done"] = False
+        state["status"] = "blocked"
+    elif instruction.get("done"):
         state["done"] = True
         state["status"] = "done"
     elif status_name == "blocked":
@@ -207,6 +213,8 @@ def commit_result(home, turn, body, status_name, summary):
 def cmd_commit(home, status_name, summary):
     state = load_state(home)
     turn = state["turn"] + 1
+    if not os.path.exists(_instruction_path(home, turn)):
+        raise SystemExit("no instruction for turn %d; run `plan` first" % turn)
     commit_result(home, turn, sys.stdin.read(), status_name, summary)
     print("committed turn %d" % turn)
 
@@ -229,13 +237,17 @@ def cmd_run(home):
         turn = load_state(home)["turn"] + 1
         instruction = load_json(_instruction_path(home, turn))
         prompt = json.dumps(instruction, ensure_ascii=False)
+        # ponytail: posix=True always; template paths with backslashes are unsupported
+        parts = shlex.split(executor_cmd, posix=True)
+        if "{prompt}" in parts:
+            parts[parts.index("{prompt}")] = prompt
         proc = subprocess.run(
-            executor_cmd.replace("{prompt}", prompt),
-            shell=True, cwd=cfg["target_dir"], capture_output=True, text=True,
+            parts, cwd=cfg["target_dir"], capture_output=True, text=True,
             encoding="utf-8")
         body = proc.stdout + ("\n[stderr]\n" + proc.stderr if proc.stderr else "")
         status_name = "done" if proc.returncode == 0 else "blocked"
-        commit_result(home, turn, body, status_name, body.strip()[:200])
+        commit_result(home, turn, body, status_name, body.strip()[:200],
+                      forced_status=status_name)
 
 
 def main(argv=None):

@@ -239,14 +239,56 @@ def test_run_passes_prompt_and_cwd(tmp_path, monkeypatch):
         stdout = "ok"
         stderr = ""
 
-    def fake_run(cmd, **kwargs):
-        recorded["cmd"] = cmd
+    def fake_run(argv, **kwargs):
+        recorded["argv"] = argv
         recorded["cwd"] = kwargs.get("cwd")
+        recorded["shell"] = kwargs.get("shell")
         return FakeProc()
 
     monkeypatch.setattr(loop.subprocess, "run", fake_run)
     loop.cmd_run(str(home))
     instruction = json.loads((home / "turns" / "001_instruction.json").read_text(encoding="utf-8"))
-    expected = "echo " + json.dumps(instruction, ensure_ascii=False)
-    assert recorded["cmd"] == expected
+    expected = ["echo", json.dumps(instruction, ensure_ascii=False)]
+    assert recorded["argv"] == expected
     assert recorded["cwd"] == cfg["target_dir"]
+    assert not recorded["shell"]
+
+
+def test_run_forced_blocked_overrides_done_instruction(tmp_path, monkeypatch):
+    home = make_home(tmp_path)
+    monkeypatch.setattr(loop, "call_planner", lambda cfg, prompt: json.dumps(instr(done=True)))
+    cfg = loop.load_config(str(home))
+    cfg["executor"]["cmd"] = "run {prompt}"
+    (home / "config.json").write_text(json.dumps(cfg), encoding="utf-8")
+
+    class FakeProc:
+        returncode = 1
+        stdout = ""
+        stderr = "boom"
+
+    monkeypatch.setattr(loop.subprocess, "run", lambda argv, **kwargs: FakeProc())
+    loop.cmd_run(str(home))
+    st = loop.load_state(str(home))
+    assert st["status"] == "blocked"
+    assert st["done"] is False
+
+
+def test_commit_without_plan_exits_and_keeps_turn(tmp_path, monkeypatch):
+    home = make_home(tmp_path)
+    _stdin(monkeypatch, "x")
+    with pytest.raises(SystemExit):
+        loop.cmd_commit(str(home), "done", "x")
+    assert loop.load_state(str(home))["turn"] == 0
+
+
+def test_plan_enforces_max_turns(tmp_path, monkeypatch):
+    home = make_home(tmp_path)
+    monkeypatch.setattr(loop, "call_planner", lambda cfg, prompt: json.dumps(instr()))
+    cfg = loop.load_config(str(home))
+    cfg["max_turns"] = 1
+    (home / "config.json").write_text(json.dumps(cfg), encoding="utf-8")
+    _stdin(monkeypatch, "x")
+    loop.cmd_plan(str(home))
+    loop.cmd_commit(str(home), "done", "x")
+    with pytest.raises(SystemExit):
+        loop.cmd_plan(str(home))
