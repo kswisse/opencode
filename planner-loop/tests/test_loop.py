@@ -212,3 +212,15 @@ def test_plan_blocks_and_stops_on_high_risk(tmp_path, monkeypatch):
     monkeypatch.setattr(loop, "call_planner", lambda cfg, prompt: json.dumps(instr(risk="high")))
     with pytest.raises(SystemExit):
         loop.cmd_plan(str(home))
+
+
+def test_run_headless_one_turn_then_done(tmp_path, monkeypatch):
+    home = make_home(tmp_path)
+    monkeypatch.setattr(loop, "call_planner", lambda cfg, prompt: json.dumps(instr(done=True)))
+    cfg = loop.load_config(str(home))
+    cfg["executor"]["cmd"] = 'python -c "print(42)"'
+    (home / "config.json").write_text(json.dumps(cfg), encoding="utf-8")
+    loop.cmd_run(str(home))
+    st = loop.load_state(str(home))
+    assert st["done"] is True and st["turn"] == 1
+    assert "42" in (home / "turns" / "001_result.md").read_text(encoding="utf-8")

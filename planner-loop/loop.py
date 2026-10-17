@@ -209,3 +209,48 @@ def cmd_commit(home, status_name, summary):
     turn = state["turn"] + 1
     commit_result(home, turn, sys.stdin.read(), status_name, summary)
     print("committed turn %d" % turn)
+
+
+def cmd_run(home):
+    cfg = load_config(home)
+    executor_cmd = (cfg.get("executor") or {}).get("cmd")
+    if not executor_cmd:
+        raise SystemExit("executor.cmd is required for headless run")
+    max_turns = cfg.get("max_turns", 50)
+    while True:
+        state = load_state(home)
+        if state.get("done"):
+            print("done after %d turns" % state["turn"])
+            return
+        if state["turn"] >= max_turns:
+            print("stopped at max_turns=%d" % max_turns)
+            return
+        cmd_plan(home)
+        turn = load_state(home)["turn"] + 1
+        instruction = load_json(_instruction_path(home, turn))
+        prompt = json.dumps(instruction, ensure_ascii=False)
+        proc = subprocess.run(
+            executor_cmd.replace("{prompt}", prompt),
+            shell=True, cwd=cfg["target_dir"], capture_output=True, text=True)
+        body = proc.stdout + ("\n[stderr]\n" + proc.stderr if proc.stderr else "")
+        status_name = "done" if proc.returncode == 0 else "blocked"
+        commit_result(home, turn, body, status_name, body.strip()[:200])
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description="Planner <-> Executor loop driver")
+    parser.add_argument("command", choices=["plan", "commit", "run"])
+    parser.add_argument("--home", default=HERE)
+    parser.add_argument("--status", default="done")
+    parser.add_argument("--summary", default="")
+    args = parser.parse_args(argv)
+    if args.command == "plan":
+        cmd_plan(args.home)
+    elif args.command == "commit":
+        cmd_commit(args.home, args.status, args.summary)
+    elif args.command == "run":
+        cmd_run(args.home)
+
+
+if __name__ == "__main__":
+    main()
