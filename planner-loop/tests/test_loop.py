@@ -101,6 +101,49 @@ def test_call_planner_retries_transient_failures(monkeypatch):
     assert calls["n"] == 3
 
 
+def test_call_planner_honors_retry_after_on_429(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    slept = []
+    monkeypatch.setattr(loop.time, "sleep", lambda s: slept.append(s))
+    payload = json.dumps({"candidates": [{"content": {"parts": [{"text": "OK"}]}}]}).encode()
+
+    class FakeResp(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    calls = {"n": 0}
+
+    def fake_urlopen(req, timeout=60):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise loop.urllib.error.HTTPError(
+                "u", 429, "Too Many Requests", {"Retry-After": "7"}, None)
+        return FakeResp(payload)
+
+    monkeypatch.setattr(loop.urllib.request, "urlopen", fake_urlopen)
+    cfg = {"planner": {"base_url": "https://x/y", "model": "m", "api_key_env": "GEMINI_API_KEY"}}
+    assert loop.call_planner(cfg, "p") == "OK"
+    assert slept == [7]
+
+
+def test_call_planner_does_not_sleep_after_last_attempt(monkeypatch):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-key")
+    slept = []
+    monkeypatch.setattr(loop.time, "sleep", lambda s: slept.append(s))
+
+    def fake_urlopen(req, timeout=60):
+        raise loop.urllib.error.HTTPError("u", 503, "Unavailable", {}, None)
+
+    monkeypatch.setattr(loop.urllib.request, "urlopen", fake_urlopen)
+    cfg = {"planner": {"base_url": "https://x/y", "model": "m", "api_key_env": "GEMINI_API_KEY"}}
+    with pytest.raises(SystemExit):
+        loop.call_planner(cfg, "p")
+    assert len(slept) == 3
+
+
 def test_call_planner_retries_on_non_json_body(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
     monkeypatch.setattr(loop.time, "sleep", lambda s: None)

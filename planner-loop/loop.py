@@ -125,6 +125,20 @@ def parse_instruction(text):
     return obj
 
 
+def _retry_delay(exc, attempt):
+    if isinstance(exc, urllib.error.HTTPError):
+        headers = getattr(exc, "headers", None)
+        ra = headers.get("Retry-After") if headers else None
+        if ra:
+            try:
+                return max(2 ** attempt, int(ra))
+            except ValueError:
+                pass
+        if exc.code in (429, 503):
+            return 20 * (attempt + 1)
+    return 2 ** attempt
+
+
 def call_planner(cfg, prompt):
     planner = cfg["planner"]
     key = os.environ.get(planner.get("api_key_env", ""), "")
@@ -144,7 +158,9 @@ def call_planner(cfg, prompt):
         except (urllib.error.URLError, urllib.error.HTTPError, KeyError, IndexError,
                 ValueError) as exc:
             last = exc
-            time.sleep(2 ** attempt)
+            if attempt == 3:
+                break
+            time.sleep(_retry_delay(exc, attempt))
     raise SystemExit("planner call failed after retries: %r" % last)
 
 
