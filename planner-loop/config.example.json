@@ -1,0 +1,20 @@
+{
+  "target_dir": "C:/Opencode/<your-project>",
+  "planner": {
+    "provider": "gemini",
+    "base_url": "https://generativelanguage.googleapis.com/v1beta",
+    "model": "gemini-2.5-flash",
+    "api_key_env": "GEMINI_API_KEY",
+    "fallbacks": []
+  },
+  "executor": { "kind": "in_session", "cmd": null },
+  "guardrails": {
+    "allowed_roots": ["C:/Opencode/<your-project>"],
+    "denied_patterns": [
+      "rm -rf", "rmdir /s", "format ", "mkfs", "shutdown",
+      "git push --force", "git reset --hard", "Remove-Item -Recurse -Force C:"
+    ],
+    "stop_on_risk_flag": true
+  },
+  "max_turns": 50
+}
