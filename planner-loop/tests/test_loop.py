@@ -39,6 +39,21 @@ def test_parse_instruction_rejects_missing_key():
         loop.parse_instruction('{"turn": 1}')
 
 
+def test_parse_instruction_normalizes_non_string_actions():
+    got = loop.parse_instruction(
+        '{"turn": 1, "goal": "g", "actions": [{"tool": "write_file", "path": "a"}, "ok"], '
+        '"acceptance": "a", "risk": "none", "done": false}')
+    assert got["actions"][1] == "ok"
+    assert isinstance(got["actions"][0], str) and "write_file" in got["actions"][0]
+
+
+def test_parse_instruction_rejects_non_list_actions():
+    with pytest.raises(ValueError):
+        loop.parse_instruction(
+            '{"turn": 1, "goal": "g", "actions": "do it", "acceptance": "a", '
+            '"risk": "none", "done": false}')
+
+
 def test_build_prompt_contains_sections():
     p = loop.build_prompt("# Plan", {"turn": 0}, "prev")
     assert "MASTERPLAN" in p and "STATE" in p and "LAST RESULT" in p and "prev" in p

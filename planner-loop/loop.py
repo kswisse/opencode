@@ -27,7 +27,8 @@ PLANNER_SYSTEM = (
     "You are the PLANNER in a planner/executor loop run by a human. "
     "You receive a MASTERPLAN, the current STATE, and the LAST RESULT. "
     "Reply with exactly ONE JSON object and nothing else. Keys: "
-    '{"turn": <int>, "goal": "<one sentence>", "actions": ["<concrete action>", ...], '
+    '{"turn": <int>, "goal": "<one sentence>", '
+    '"actions": ["<concrete action>", ...] (each a plain string, never an object), '
     '"acceptance": "<how to verify>", "risk": "none|low|high", "done": <bool>}. '
     "Do not include prose or markdown fences."
 )
@@ -116,6 +117,11 @@ def parse_instruction(text):
     for key in REQUIRED_INSTRUCTION_KEYS:
         if key not in obj:
             raise ValueError("instruction missing key: %s" % key)
+    actions = obj["actions"]
+    if not isinstance(actions, list):
+        raise ValueError("instruction 'actions' must be a list")
+    obj["actions"] = [
+        a if isinstance(a, str) else json.dumps(a, ensure_ascii=False) for a in actions]
     return obj
 
 
